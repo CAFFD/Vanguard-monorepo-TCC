@@ -2,33 +2,33 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { equipments } from "../db/schema.js";
-
-interface CreateEquipmentBody {
-    id: string;
-    sector_id: string;
-    mac_address: string;
-    patrimony_tag: string;
-    hostname: string;
-    health_status: string;
-}
+import {
+    createEquipmentSchema,
+    updateEquipmentSchema,
+} from "../schemas/equipment-schemas.js";
 
 interface UpdateEquipmentParams {
     id: string;
 }
 
-interface UpdateEquipmentBody {
-    sector_id?: string;
-    mac_address?: string;
-    patrimony_tag?: string;
-    hostname?: string;
-    health_status?: string;
-}
-
 export async function createEquipment(
-    request: FastifyRequest<{ Body: CreateEquipmentBody }>,
+    request: FastifyRequest,
     reply: FastifyReply
 ) {
-    const { id, sector_id, mac_address, patrimony_tag, hostname, health_status } = request.body;
+    const result = createEquipmentSchema.safeParse(request.body);
+
+    if (!result.success) {
+        return reply.status(400).send({
+            success: false,
+            message: "Dados de equipamento inválidos",
+            errors: result.error.issues.map((issue) => ({
+                field: issue.path.join("."),
+                message: issue.message,
+            })),
+        });
+    }
+
+    const { id, sector_id, mac_address, patrimony_tag, hostname, health_status } = result.data;
 
     const [createdEquipment] = await db
         .insert(equipments)
@@ -60,12 +60,24 @@ export async function getEquipments(
 export async function updateEquipment(
     request: FastifyRequest<{
         Params: UpdateEquipmentParams;
-        Body: UpdateEquipmentBody;
     }>,
     reply: FastifyReply
 ) {
+    const result = updateEquipmentSchema.safeParse(request.body);
+
+    if (!result.success) {
+        return reply.status(400).send({
+            success: false,
+            message: "Dados de equipamento inválidos",
+            errors: result.error.issues.map((issue) => ({
+                field: issue.path.join("."),
+                message: issue.message,
+            })),
+        });
+    }
+
     const { id } = request.params;
-    const { sector_id, mac_address, patrimony_tag, hostname, health_status } = request.body;
+    const { sector_id, mac_address, patrimony_tag, hostname, health_status } = result.data;
 
     const [updatedEquipment] = await db
         .update(equipments)

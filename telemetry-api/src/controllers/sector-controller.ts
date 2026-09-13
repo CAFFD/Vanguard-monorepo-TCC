@@ -1,18 +1,26 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/index.js";
 import { sectors } from "../db/schema.js";
-
-interface CreateSectorBody {
-    id: string;
-    name: string;
-    description: string;
-}
+import { createSectorSchema } from "../schemas/sector-schemas.js";
 
 export async function createSector(
-    request: FastifyRequest<{ Body: CreateSectorBody }>,
+    request: FastifyRequest,
     reply: FastifyReply
 ) {
-    const { id, name, description } = request.body;
+    const result = createSectorSchema.safeParse(request.body);
+
+    if (!result.success) {
+        return reply.status(400).send({
+            success: false,
+            message: "Dados de setor inválidos",
+            errors: result.error.issues.map((issue) => ({
+                field: issue.path.join("."),
+                message: issue.message,
+            })),
+        });
+    }
+
+    const { id, name, description } = result.data;
 
     const [createdSector] = await db
         .insert(sectors)
