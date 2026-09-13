@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { equipments } from "../db/schema.js";
+import { equipments, telemetryHistory } from "../db/schema.js";
 import {
     telemetrySchema
 } from "../schemas/telemetry-schemas.js";
@@ -48,11 +49,24 @@ export async function createTelemetry(
         });
     }
 
-    const equipment = matchingEquipments[0];
+    const equipment = matchingEquipments[0]!;
+
+    await db.insert(telemetryHistory).values({
+        id: randomUUID(),
+        created_at: new Date(),
+        disk_usage_percent: String(telemetry.disk_usage),
+        smart_5: telemetry.smart_5,
+        equipment_id: equipment.id,
+        smart_187: telemetry.smart_187,
+        smart_188: telemetry.smart_188,
+        smart_197: telemetry.smart_197,
+        smart_198: telemetry.smart_198,
+        raw_payload: telemetry,
+    });
 
     console.log(
-        "Telemetria recebida para equipamento:",
-        equipment?.id,
+        "Telemetria persistida para equipamento:",
+        equipment.id,
         telemetry
     );
 
