@@ -1,0 +1,186 @@
+{
+  "info": {
+    "_postman_id": "equipments-collection",
+    "name": "Equipments API",
+    "description": "Coleção de testes para endpoints de Equipamentos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST /equipments — Válido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"eq-doc-001\",\n  \"sector_id\": \"sec-ti-01\",\n  \"mac_address\": \"AA:BB:CC:DD:EE:91\",\n  \"patrimony_tag\": \"PAT-DOC-001\",\n  \"hostname\": \"PC-DOC-001\",\n  \"health_status\": \"normal\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/equipments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "equipments"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /equipments — Inválido (sem hostname)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"eq-doc-002\",\n  \"sector_id\": \"sec-ti-01\",\n  \"mac_address\": \"AA:BB:CC:DD:EE:92\",\n  \"patrimony_tag\": \"PAT-DOC-002\",\n  \"health_status\": \"normal\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/equipments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "equipments"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /equipments",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/equipments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "equipments"
+          ]
+        }
+      }
+    },
+    {
+      "name": "PUT /equipments/:id — Válido",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sector_id\": \"sec-ti-01\",\n  \"mac_address\": \"AA:BB:CC:DD:EE:91\",\n  \"patrimony_tag\": \"PAT-DOC-001\",\n  \"hostname\": \"PC-DOC-001-UPDATED\",\n  \"health_status\": \"normal\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/equipments/eq-doc-001",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "equipments",
+            "eq-doc-001"
+          ]
+        }
+      }
+    },
+    {
+      "name": "PUT /equipments/:id — Inválido (health_status vazio)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sector_id\": \"sec-ti-01\",\n  \"mac_address\": \"AA:BB:CC:DD:EE:91\",\n  \"patrimony_tag\": \"PAT-DOC-001\",\n  \"hostname\": \"PC-DOC-001-UPDATED\",\n  \"health_status\": \"\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/equipments/eq-doc-001",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "equipments",
+            "eq-doc-001"
+          ]
+        }
+      }
+    },
+    {
+      "name": "PUT /equipments/:id — Equipamento Inexistente",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sector_id\": \"sec-ti-01\",\n  \"mac_address\": \"AA:BB:CC:DD:EE:99\",\n  \"patrimony_tag\": \"PAT-DOC-999\",\n  \"hostname\": \"PC-DOC-999\",\n  \"health_status\": \"normal\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/equipments/eq-nao-existe-doc",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "equipments",
+            "eq-nao-existe-doc"
+          ]
+        }
+      }
+    }
+  ]
+}
