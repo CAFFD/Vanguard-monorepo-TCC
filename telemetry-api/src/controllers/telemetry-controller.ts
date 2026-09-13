@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { equipments, telemetryHistory } from "../db/schema.js";
 import {
     telemetrySchema
 } from "../schemas/telemetry-schemas.js";
+
+interface GetTelemetryHistoryParams {
+    equipamento_id: string;
+}
 
 export async function createTelemetry(
     request: FastifyRequest,
@@ -75,4 +79,19 @@ export async function createTelemetry(
         message:
             "Telemetria recebida com sucesso",
     });
+}
+
+export async function getTelemetryHistory(
+    request: FastifyRequest<{ Params: GetTelemetryHistoryParams }>,
+    reply: FastifyReply
+) {
+    const { equipamento_id } = request.params;
+
+    const history = await db
+        .select()
+        .from(telemetryHistory)
+        .where(eq(telemetryHistory.equipment_id, equipamento_id))
+        .orderBy(desc(telemetryHistory.created_at));
+
+    return reply.status(200).send(history);
 }
