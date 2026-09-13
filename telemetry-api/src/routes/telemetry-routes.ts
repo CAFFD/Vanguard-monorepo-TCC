@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import {
     createTelemetry,
     getTelemetryHistory,
+    getTelemetryStatus,
 } from "../controllers/telemetry-controller.js";
 
 export async function telemetryRoutes(
@@ -11,6 +12,11 @@ export async function telemetryRoutes(
     app.post(
         "/telemetry",
         createTelemetry
+    );
+
+    app.get(
+        "/telemetry/status",
+        getTelemetryStatus
     );
 
     app.get(
