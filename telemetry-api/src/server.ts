@@ -1,6 +1,9 @@
 import Fastify from "fastify";
 
 import {
+    equipmentRoutes
+} from "./routes/equipment-routes.js";
+import {
     sectorRoutes
 } from "./routes/sector-routes.js";
 import {
@@ -13,6 +16,7 @@ const app = Fastify({
 
 app.register(telemetryRoutes);
 app.register(sectorRoutes);
+app.register(equipmentRoutes);
 
 app.listen({
     port: 3000,
