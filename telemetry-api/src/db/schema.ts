@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, jsonb, numeric, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -34,4 +34,17 @@ export const occurrences = pgTable('occurrences', {
   diagnosis: text('diagnosis'),
   action_taken: text('action_taken'),
   closure_date: timestamp('closure_date'),
+});
+
+export const telemetryHistory = pgTable('telemetry_history', {
+  id: text('id').primaryKey(),
+  created_at: timestamp('created_at'),
+  disk_usage_percent: numeric('disk_usage_percent'),
+  smart_5: integer('smart_5'),
+  equipment_id: text('equipment_id').references(() => equipments.id),
+  smart_187: integer('smart_187'),
+  smart_188: integer('smart_188'),
+  smart_197: integer('smart_197'),
+  smart_198: integer('smart_198'),
+  raw_payload: jsonb('raw_payload'),
 });
