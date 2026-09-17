@@ -1,8 +1,44 @@
+# =============================================================================
+# Vanguard Monorepo — .gitignore
+# =============================================================================
+
+# ── Dependências ──────────────────────────────────────────────────────────────
 node_modules/
+vendor/
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
 dist/
 build/
+out/
+*.js.map
+
+# ── Variáveis de ambiente (NUNCA commitar o .env real) ────────────────────────
 .env
 .env.local
-*.exe
+.env.*.local
+# .env.example é commitado intencionalmente
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Go (agent/) ───────────────────────────────────────────────────────────────
+agent/agent
+agent/*.exe
+
+# ── Sistema operacional ───────────────────────────────────────────────────────
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs e Editores ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
