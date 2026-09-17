@@ -1,0 +1,158 @@
+{
+  "info": {
+    "_postman_id": "telemetry-collection",
+    "name": "Telemetry API",
+    "description": "Coleção de testes para endpoints de Telemetria",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST /telemetry — Válido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hostname\": \"PC-TI-001-MOD\",\n  \"disk_usage\": 52,\n  \"smart_5\": 1,\n  \"smart_187\": 2,\n  \"smart_188\": 3,\n  \"smart_197\": 4,\n  \"smart_198\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/telemetry",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "telemetry"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /telemetry — Inválido (sem hostname)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"disk_usage\": 52,\n  \"smart_5\": 1,\n  \"smart_187\": 2,\n  \"smart_188\": 3,\n  \"smart_197\": 4,\n  \"smart_198\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/telemetry",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "telemetry"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /telemetry — Hostname Inexistente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hostname\": \"PC-INEXISTENTE\",\n  \"disk_usage\": 52,\n  \"smart_5\": 1,\n  \"smart_187\": 2,\n  \"smart_188\": 3,\n  \"smart_197\": 4,\n  \"smart_198\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/telemetry",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "telemetry"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /telemetry/:equipamento_id — Com Histórico",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/telemetry/eq-pc-001",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "telemetry",
+            "eq-pc-001"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /telemetry/:equipamento_id — Sem Histórico",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/telemetry/eq-pc-002",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "telemetry",
+            "eq-pc-002"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /telemetry/status — Contagem Agregada",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/telemetry/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "telemetry",
+            "status"
+          ]
+        }
+      }
+    }
+  ]
+}

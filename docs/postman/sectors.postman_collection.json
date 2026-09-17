@@ -1,0 +1,93 @@
+{
+  "info": {
+    "_postman_id": "sectors-collection",
+    "name": "Sectors API",
+    "description": "Coleção de testes para endpoints de Setores",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST /sectors — Válido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"sec-doc-01\",\n  \"name\": \"Setor Documentação\",\n  \"description\": \"Setor criado para validação da API\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sectors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sectors"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /sectors — Inválido (sem name)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"sec-doc-02\",\n  \"description\": \"Sem nome\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/sectors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sectors"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /sectors",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/sectors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "sectors"
+          ]
+        }
+      }
+    }
+  ]
+}
