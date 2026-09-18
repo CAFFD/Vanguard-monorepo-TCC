@@ -1,30 +1,15 @@
-import Fastify from "fastify";
+import { buildApp } from "./app.js";
 
-import {
-    equipmentRoutes
-} from "./routes/equipment-routes.js";
-import {
-    sectorRoutes
-} from "./routes/sector-routes.js";
-import {
-    telemetryRoutes
-} from "./routes/telemetry-routes.js";
-
-const app = Fastify({
-    logger: true,
-});
-
-app.register(telemetryRoutes);
-app.register(sectorRoutes);
-app.register(equipmentRoutes);
+/**
+ * Entrypoint para desenvolvimento local.
+ * Usa a factory `buildApp()` e inicia o listener de porta.
+ * Este arquivo NÃO é usado pela Vercel — veja `api/index.ts`.
+ */
+const app = buildApp();
 
 app.listen({
     port: 3000,
     host: "0.0.0.0",
 }).then(() => {
-
-    console.log(
-        "Servidor rodando na porta 3000"
-    );
-
+    console.log("Servidor rodando na porta 3000");
 });
