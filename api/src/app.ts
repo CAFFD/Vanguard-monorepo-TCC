@@ -26,6 +26,11 @@ export function buildApp() {
         logger: true,
     });
 
+    // Rota raiz (Health Check)
+    app.get("/", async () => {
+        return { status: "ok", message: "Vanguard API is running!" };
+    });
+
     app.register(telemetryRoutes);
     app.register(sectorRoutes);
     app.register(equipmentRoutes);
