@@ -18,6 +18,10 @@ import {
  * - Vercel: `api/index.ts` exporta um handler serverless via `.ready()`.
  */
 export function buildApp() {
+    if (!process.env.DATABASE_URL) {
+        throw new Error("FATAL: DATABASE_URL environment variable is missing.");
+    }
+
     const app = Fastify({
         logger: true,
     });
