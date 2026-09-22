@@ -6,7 +6,7 @@ import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../components/feedback/ToastContext';
 import { sectorSchema } from '../schemas/sectorSchema';
 import type { SectorFormData } from '../schemas/sectorSchema';
-import { StorageService } from '../../../services/storage';
+import { apiFetch } from '../../../lib/api';
 
 export const SectorRegistrationPage: React.FC = () => {
   const { showToast } = useToast();
@@ -23,12 +23,23 @@ export const SectorRegistrationPage: React.FC = () => {
 
   const onSubmit = async (data: SectorFormData) => {
     try {
-      const newSector = {
+      const payload = {
         id: crypto.randomUUID(),
         name: data.name,
-        description: data.description,
+        description: data.description
       };
-      await StorageService.saveSector(newSector);
+
+      const response = await apiFetch('/sectors', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Erro ao cadastrar setor na API.');
+      }
+      
       showToast('success', 'Setor cadastrado com sucesso');
       reset();
     } catch (error: any) {
