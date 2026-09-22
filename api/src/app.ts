@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 
 import {
     equipmentRoutes
@@ -24,6 +25,11 @@ export function buildApp() {
 
     const app = Fastify({
         logger: true,
+    });
+
+    app.register(cors, {
+        origin: "*", // Libera requisições de qualquer origem (frontend local e Vercel)
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     });
 
     // Rota raiz (Health Check)

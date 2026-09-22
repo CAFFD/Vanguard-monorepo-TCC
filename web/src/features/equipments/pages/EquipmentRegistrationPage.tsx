@@ -8,8 +8,12 @@ import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../components/feedback/ToastContext';
 import { equipmentSchema } from '../schemas/equipmentSchema';
 import type { EquipmentFormData } from '../schemas/equipmentSchema';
-import { StorageService } from '../../../services/storage';
-import type { Sector } from '../../../mocks/sectors';
+import { apiFetch } from '../../../lib/api';
+
+interface Sector {
+  id: string;
+  name: string;
+}
 
 export const EquipmentRegistrationPage: React.FC = () => {
   const { showToast } = useToast();
@@ -28,17 +32,20 @@ export const EquipmentRegistrationPage: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    StorageService.getSectors().then(data => {
-      if (isMounted) {
-        setSectors(data);
-        setLoadingSectors(false);
-      }
-    }).catch(() => {
-      if (isMounted) {
-        showToast('error', 'Falha ao carregar setores.');
-        setLoadingSectors(false);
-      }
-    });
+    apiFetch('/sectors')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted) {
+          setSectors(data);
+          setLoadingSectors(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          showToast('error', 'Falha ao carregar setores.');
+          setLoadingSectors(false);
+        }
+      });
     return () => { isMounted = false; };
   }, [showToast]);
 
@@ -56,12 +63,26 @@ export const EquipmentRegistrationPage: React.FC = () => {
 
   const onSubmit = async (data: EquipmentFormData) => {
     try {
-      const newEquipment = {
+      const payload = {
         id: crypto.randomUUID(),
-        healthStatus: 'NORMAL' as const,
-        ...data
+        sector_id: data.sectorId,
+        mac_address: data.macAddress,
+        patrimony_tag: data.patrimonyTag,
+        hostname: data.hostname,
+        health_status: 'NORMAL'
       };
-      await StorageService.saveEquipment(newEquipment);
+
+      const response = await apiFetch('/equipments', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Erro ao cadastrar equipamento.');
+      }
+      
       showToast('success', 'Equipamento cadastrado com sucesso');
       reset();
     } catch (error: any) {
