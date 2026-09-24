@@ -8,12 +8,12 @@ import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../components/feedback/ToastContext';
 import { userSchema } from '../schemas/userSchema';
 import type { UserFormData } from '../schemas/userSchema';
-import { StorageService } from '../../../services/storage';
+import { apiFetch } from '../../../lib/api';
 
 export const UserRegistrationPage: React.FC = () => {
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -27,14 +27,34 @@ export const UserRegistrationPage: React.FC = () => {
 
   const onSubmit = async (data: UserFormData) => {
     try {
-      const newUser = {
+      // Hash da senha via Web Crypto API (SHA-256) antes de enviar ao backend
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data.password));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const password_hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+      const payload = {
         id: crypto.randomUUID(),
         name: data.name,
         email: data.email,
         role: data.role,
+        password_hash,
       };
-      await StorageService.saveUser(newUser);
-      showToast('success', 'Usuário cadastrado com sucesso');
+
+      const response = await apiFetch('/users', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        const msg = responseData?.message || 'Erro ao cadastrar usuário.';
+        showToast('error', msg);
+        return;
+      }
+
+      showToast('success', 'Usuário cadastrado com sucesso!');
       reset();
     } catch (error: any) {
       showToast('error', error.message || 'Erro inesperado ao cadastrar usuário.');
@@ -55,7 +75,9 @@ export const UserRegistrationPage: React.FC = () => {
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Cadastrar usuário</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Registre um novo profissional com acesso ao sistema de gestão de ativos.</p>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          Registre um novo profissional com acesso ao sistema de gestão de ativos.
+        </p>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-6 md:p-8">
@@ -68,7 +90,7 @@ export const UserRegistrationPage: React.FC = () => {
               error={errors.name?.message}
               autoComplete="name"
             />
-            
+
             <Input
               label="E-mail institucional"
               type="email"
