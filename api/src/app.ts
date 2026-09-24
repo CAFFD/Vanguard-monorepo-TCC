@@ -10,6 +10,9 @@ import {
 import {
     telemetryRoutes
 } from "./routes/telemetry-routes.js";
+import {
+    userRoutes
+} from "./routes/user-routes.js";
 
 /**
  * Cria e configura a instância Fastify sem iniciar nenhum listener de porta.
@@ -28,7 +31,7 @@ export function buildApp() {
     });
 
     app.register(cors, {
-        origin: "*", // Libera requisições de qualquer origem (frontend local e Vercel)
+        origin: "*", // testes (frontend local e Vercel)
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     });
 
@@ -40,6 +43,7 @@ export function buildApp() {
     app.register(telemetryRoutes);
     app.register(sectorRoutes);
     app.register(equipmentRoutes);
+    app.register(userRoutes);
 
     return app;
 }

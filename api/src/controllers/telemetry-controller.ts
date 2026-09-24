@@ -109,7 +109,7 @@ export async function getTelemetryStatus(
 
         const latest = recentTelemetries[0];
 
-        // 1. Offline: sem telemetria ou ├║ltima telemetria h├í mais de 2 horas
+        // 1. Offline: sem telemetria ou sem resposta mais de 2 horas
         if (!latest || !latest.created_at) {
             counts.offline++;
             continue;
@@ -121,7 +121,7 @@ export async function getTelemetryStatus(
             continue;
         }
 
-        // 2. Cr├¡tico: SMART_197 e SMART_198 aumentaram em rela├º├úo ├á leitura anterior
+        // 2. Crítico: SMART_197 e SMART_198 aumentaram em relação à leitura anterior
         const previous = recentTelemetries[1];
         if (
             previous &&
@@ -132,7 +132,7 @@ export async function getTelemetryStatus(
             continue;
         }
 
-        // 3. Aten├º├úo: disk_usage > 90 ou SMART_197 > 0
+        // 3. Atenção: disk_usage > 90 ou SMART_197 > 0
         const diskUsage = Number(latest.disk_usage_percent);
         const smart197 = latest.smart_197 ?? 0;
         if (diskUsage > 90 || smart197 > 0) {
@@ -140,7 +140,7 @@ export async function getTelemetryStatus(
             continue;
         }
 
-        // 4. Normal: nenhuma das condi├º├Áes acima
+        // 4. Normal: nenhuma das condições acima
         counts.normal++;
     }
 
