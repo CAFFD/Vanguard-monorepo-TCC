@@ -129,17 +129,20 @@ func descobrirDisco() (string, error) {
 	cmd := exec.Command(binario, "--scan-open", "-j")
 	output, _ := cmd.CombinedOutput()
 
-	var dispositivos []ScannedDevice
-	if err := json.Unmarshal(output, &dispositivos); err != nil {
+	var scanOutput struct {
+		Devices []ScannedDevice `json:"devices"`
+	}
+
+	if err := json.Unmarshal(output, &scanOutput); err != nil {
 		return "", fmt.Errorf("falha ao parsear output do --scan-open: %w (output: %s)", err, string(output))
 	}
 
-	if len(dispositivos) == 0 {
+	if len(scanOutput.Devices) == 0 {
 		return "", fmt.Errorf("nenhum disco detectado pelo smartctl --scan-open")
 	}
 
-	disco := dispositivos[0].Name
-	fmt.Printf("[INFO] Disco detectado: %s (tipo: %s)\n", disco, dispositivos[0].Type)
+	disco := scanOutput.Devices[0].Name
+	fmt.Printf("[INFO] Disco detectado: %s (tipo: %s)\n", disco, scanOutput.Devices[0].Type)
 	return disco, nil
 }
 
