@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { equipments } from "../db/schema.js";
+import { equipments, telemetryHistory } from "../db/schema.js";
 import {
     createEquipmentSchema,
     updateEquipmentSchema,
@@ -53,8 +53,55 @@ export async function getEquipments(
     reply: FastifyReply
 ) {
     const allEquipments = await db.select().from(equipments);
+    
+    // Motor de Regras: Calcular status ao vivo baseado no histórico
+    const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
+    const now = Date.now();
+    
+    const equipmentsWithLiveStatus = await Promise.all(
+        allEquipments.map(async (eqData) => {
+            const recentTelemetries = await db
+                .select()
+                .from(telemetryHistory)
+                .where(eq(telemetryHistory.equipment_id, eqData.id))
+                .orderBy(desc(telemetryHistory.created_at))
+                .limit(2);
+                
+            let liveStatus = "NORMAL";
+            const latest = recentTelemetries[0];
+            
+            if (!latest || !latest.created_at) {
+                liveStatus = "OFFLINE";
+            } else {
+                const telemetryTime = new Date(latest.created_at).getTime();
+                if (now - telemetryTime > TWO_HOURS_IN_MS) {
+                    liveStatus = "OFFLINE";
+                } else {
+                    const previous = recentTelemetries[1];
+                    if (
+                        previous &&
+                        (latest.smart_197 ?? 0) > (previous.smart_197 ?? 0) &&
+                        (latest.smart_198 ?? 0) > (previous.smart_198 ?? 0)
+                    ) {
+                        liveStatus = "CRÍTICO";
+                    } else {
+                        const diskUsage = Number(latest.disk_usage_percent);
+                        const smart197 = latest.smart_197 ?? 0;
+                        if (diskUsage > 90 || smart197 > 0) {
+                            liveStatus = "ATENÇÃO";
+                        }
+                    }
+                }
+            }
+            
+            return {
+                ...eqData,
+                health_status: liveStatus
+            };
+        })
+    );
 
-    return reply.status(200).send(allEquipments);
+    return reply.status(200).send(equipmentsWithLiveStatus);
 }
 
 export async function updateEquipment(

@@ -22,7 +22,7 @@ func apiURL() string {
 	if url := os.Getenv("VANGUARD_API_URL"); url != "" {
 		return url
 	}
-	return "https://vanguard-monorepo-tcc-api.vercel.app"
+	return "https://vanguard-monorepo-tcc.vercel.app"
 }
 
 // smartctlPath localiza o binário smartctl no PATH do sistema.
