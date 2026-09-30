@@ -49,9 +49,9 @@ export const TelemetryDashboard: React.FC = () => {
         if (isMounted) {
           setStatusCounts(statusData);
           
-          // Filtragem no frontend (Trade-off aceitável para o TCC)
+          // Filtragem no frontend: CRÍTICO, ATENÇÃO e OFFLINE são considerados riscos
           const atRisk = equipmentsData.filter(
-            (eq) => eq.health_status === 'CRÍTICO' || eq.health_status === 'ATENÇÃO'
+            (eq) => eq.health_status === 'CRÍTICO' || eq.health_status === 'ATENÇÃO' || eq.health_status === 'OFFLINE'
           );
           
           setRiskEquipments(atRisk);
@@ -190,11 +190,15 @@ export const TelemetryDashboard: React.FC = () => {
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 w-max
                           ${eq.health_status === 'CRÍTICO' 
                             ? 'bg-red-50 text-red-700 border-red-200' 
-                            : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            : eq.health_status === 'ATENÇÃO'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'}`}>
                           {eq.health_status === 'CRÍTICO' ? (
                             <XCircle className="w-3 h-3" />
-                          ) : (
+                          ) : eq.health_status === 'ATENÇÃO' ? (
                             <AlertTriangle className="w-3 h-3" />
+                          ) : (
+                            <WifiOff className="w-3 h-3" />
                           )}
                           {eq.health_status}
                         </span>
