@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Menu, X, Users, Monitor, Shield, Building2, ClipboardList, Server } from 'lucide-react';
+import { Menu, X, Users, Monitor, Shield, Building2, ClipboardList, Server, Activity } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -8,6 +8,7 @@ export const Layout: React.FC = () => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const navLinks = [
+    { to: '/', label: 'Dashboard NOC', icon: <Activity size={18} /> },
     { to: '/equipamentos', label: 'Prontuário', icon: <Server size={18} /> },
     { to: '/usuarios/cadastrar', label: 'Cadastrar usuário', icon: <Users size={18} /> },
     { to: '/equipamentos/cadastrar', label: 'Cadastrar equipamento', icon: <Monitor size={18} /> },
