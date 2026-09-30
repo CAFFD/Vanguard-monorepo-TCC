@@ -104,6 +104,55 @@ export async function getEquipments(
     return reply.status(200).send(equipmentsWithLiveStatus);
 }
 
+export async function getEquipmentById(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply
+) {
+    const { id } = request.params;
+    
+    const [eqData] = await db.select().from(equipments).where(eq(equipments.id, id));
+    if (!eqData) {
+        return reply.status(404).send({ success: false, message: "Equipamento não encontrado" });
+    }
+
+    // Calcula status ao vivo (mesma lógica simplificada do getEquipments)
+    const recentTelemetries = await db
+        .select()
+        .from(telemetryHistory)
+        .where(eq(telemetryHistory.equipment_id, eqData.id))
+        .orderBy(desc(telemetryHistory.created_at))
+        .limit(2);
+        
+    let liveStatus = "NORMAL";
+    const latest = recentTelemetries[0];
+    
+    if (!latest || !latest.created_at) {
+        liveStatus = "OFFLINE";
+    } else {
+        const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
+        const telemetryTime = new Date(latest.created_at).getTime();
+        if (Date.now() - telemetryTime > TWO_HOURS_IN_MS) {
+            liveStatus = "OFFLINE";
+        } else {
+            const previous = recentTelemetries[1];
+            if (previous && (latest.smart_197 ?? 0) > (previous.smart_197 ?? 0) && (latest.smart_198 ?? 0) > (previous.smart_198 ?? 0)) {
+                liveStatus = "CRÍTICO";
+            } else {
+                const diskUsage = Number(latest.disk_usage_percent);
+                const smart197 = latest.smart_197 ?? 0;
+                if (diskUsage > 90 || smart197 > 0) {
+                    liveStatus = "ATENÇÃO";
+                }
+            }
+        }
+    }
+    
+    return reply.status(200).send({
+        ...eqData,
+        health_status: liveStatus
+    });
+}
+
 export async function updateEquipment(
     request: FastifyRequest<{
         Params: UpdateEquipmentParams;

@@ -14,6 +14,11 @@ export const occurrenceSchema = z.object({
     .max(1000, 'A descrição deve ter no máximo 1000 caracteres.')
     .trim()
     .refine(val => val.length > 0, 'Não pode conter apenas espaços.'),
+  diagnosis: z.string().optional().nullable(),
+  actionTaken: z.string()
+    .max(1000, 'A ação tomada deve ter no máximo 1000 caracteres.')
+    .optional()
+    .nullable(),
 });
 
 export type OccurrenceFormData = z.infer<typeof occurrenceSchema>;

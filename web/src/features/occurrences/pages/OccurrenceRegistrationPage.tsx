@@ -9,6 +9,7 @@ import { useToast } from '../../../components/feedback/ToastContext';
 import { occurrenceSchema } from '../schemas/occurrenceSchema';
 import type { OccurrenceFormData } from '../schemas/occurrenceSchema';
 import { StorageService } from '../../../services/storage';
+import { apiFetch } from '../../../lib/api';
 import type { Equipment } from '../../equipments/types';
 import type { User } from '../../users/types';
 
@@ -68,15 +69,24 @@ export const OccurrenceRegistrationPage: React.FC = () => {
 
   const onSubmit = async (data: OccurrenceFormData) => {
     try {
-      const newOccurrence = {
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-        diagnosis: null,
-        actionTaken: null,
-        closureDate: null,
-        ...data
-      };
-      await StorageService.saveOccurrence(newOccurrence);
+      const res = await apiFetch('/occurrences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipment_id: data.equipmentId,
+          technician_id: data.technicianId || null,
+          origin: data.origin,
+          priority: data.priority,
+          description: data.description,
+          diagnosis: data.diagnosis || null,
+          action_taken: data.actionTaken,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao registrar ocorrência na API.');
+      }
+
       showToast('success', 'Chamado aberto com sucesso');
       reset();
     } catch (error: any) {

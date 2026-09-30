@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../../../lib/api';
 import { useToast } from '../../../components/feedback/ToastContext';
 
@@ -83,6 +84,7 @@ export const EquipmentListPage: React.FC = () => {
                   <th className="px-6 py-4 font-medium">Endereço MAC</th>
                   <th className="px-6 py-4 font-medium">Setor</th>
                   <th className="px-6 py-4 font-medium">Saúde</th>
+                  <th className="px-6 py-4 font-medium text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -104,9 +106,21 @@ export const EquipmentListPage: React.FC = () => {
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium border
                         ${equipment.health_status === 'NORMAL' 
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                          : equipment.health_status === 'OFFLINE'
+                          ? 'bg-gray-100 text-gray-700 border-gray-300'
+                          : equipment.health_status === 'ATENÇÃO'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-red-50 text-red-700 border-red-200'}`}>
                         {equipment.health_status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Link 
+                        to={`/equipamentos/${equipment.id}`}
+                        className="text-[var(--color-primary)] hover:underline text-sm font-medium"
+                      >
+                        Prontuário
+                      </Link>
                     </td>
                   </tr>
                 ))}

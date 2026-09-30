@@ -13,6 +13,9 @@ import {
 import {
     userRoutes
 } from "./routes/user-routes.js";
+import {
+    occurrenceRoutes
+} from "./routes/occurrence-routes.js";
 
 /**
  * Cria e configura a instância Fastify sem iniciar nenhum listener de porta.
@@ -44,6 +47,7 @@ export function buildApp() {
     app.register(sectorRoutes);
     app.register(equipmentRoutes);
     app.register(userRoutes);
+    app.register(occurrenceRoutes, { prefix: '/occurrences' });
 
     return app;
 }

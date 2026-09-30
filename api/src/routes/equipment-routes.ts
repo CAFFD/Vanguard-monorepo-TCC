@@ -3,6 +3,7 @@ import {
     createEquipment,
     getEquipments,
     updateEquipment,
+    getEquipmentById,
 } from "../controllers/equipment-controller.js";
 
 export async function equipmentRoutes(
@@ -16,6 +17,11 @@ export async function equipmentRoutes(
     app.get(
         "/equipments",
         getEquipments
+    );
+    
+    app.get(
+        "/equipments/:id",
+        getEquipmentById
     );
 
     app.put(
