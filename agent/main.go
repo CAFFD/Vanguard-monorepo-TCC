@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -127,6 +128,7 @@ func descobrirDisco() (string, error) {
 
 	// exit code não-zero é esperado aqui — ignoramos, confiamos no JSON
 	cmd := exec.Command(binario, "--scan-open", "-j")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, _ := cmd.CombinedOutput()
 
 	var scanOutput struct {
@@ -158,6 +160,7 @@ func coletarSmart(device string) (SmartData, error) {
 	}
 
 	cmd := exec.Command(binario, "-a", "-j", device)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, err := cmd.CombinedOutput()
 
 	// smartctl usa exit codes não-zero mesmo em leitura parcial bem-sucedida.
@@ -179,9 +182,10 @@ func coletarSmart(device string) (SmartData, error) {
 // --------------------------------------------------
 
 func obterUsoDisco() (int, error) {
-	comando := `$d = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"; [math]::Round((($d.Size-$d.FreeSpace)/$d.Size)*100)`
+	comando := `$d = Get-WmiObject Win32_LogicalDisk -Filter "DeviceID='C:'"; [math]::Round((($d.Size-$d.FreeSpace)/$d.Size)*100)`
 
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", comando)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, err := cmd.Output()
 	if err != nil {
 		return 0, fmt.Errorf("falha ao obter uso do disco: %w", err)
@@ -275,12 +279,31 @@ func executarCiclo(hostname string) {
 // MAIN — DAEMON COM TICKER
 // --------------------------------------------------
 
+func sanitizeHostname(s string) string {
+	replacer := strings.NewReplacer(
+		"á", "a", "à", "a", "â", "a", "ã", "a",
+		"é", "e", "è", "e", "ê", "e",
+		"í", "i", "ï", "i",
+		"ó", "o", "ô", "o", "õ", "o",
+		"ú", "u",
+		"ç", "c",
+		"Á", "A", "À", "A", "Â", "A", "Ã", "A",
+		"É", "E", "È", "E", "Ê", "E",
+		"Í", "I", "Ï", "I",
+		"Ó", "O", "Ô", "O", "Õ", "O",
+		"Ú", "U",
+		"Ç", "C",
+	)
+	return replacer.Replace(s)
+}
+
 func main() {
-	hostname, err := os.Hostname()
+	rawHostname, err := os.Hostname()
 	if err != nil {
 		fmt.Printf("[FATAL] Não foi possível obter o hostname: %v\n", err)
 		os.Exit(1)
 	}
+	hostname := sanitizeHostname(rawHostname)
 
 	fmt.Printf("[INFO] Agente Vanguard iniciado | hostname=%s | api=%s\n", hostname, apiURL())
 
