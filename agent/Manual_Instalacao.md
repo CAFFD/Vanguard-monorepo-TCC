@@ -52,14 +52,10 @@ Agora vamos dizer para o Windows ligar o agente sozinho, de forma invisível, to
 1. Ainda naquela tela azul do **PowerShell como Administrador** (ou abra uma nova se fechou), copie *todo o bloco de texto abaixo* (junto), cole na tela e aperte **Enter**:
 
 ```powershell
-$action  = New-ScheduledTaskAction -Execute "C:\Program Files\Vanguard\vanguard-agent.exe"
-$trigger = New-ScheduledTaskTrigger -AtStartup
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-
-Register-ScheduledTask -TaskName "VanguardAgent" -Action $action -Trigger $trigger -RunLevel Highest -Settings $settings -Description "Agente Vanguard"
+cmd.exe /c 'schtasks /create /tn "VanguardAgent" /tr "\"C:\Program Files\Vanguard\vanguard-agent.exe\"" /sc onstart /ru SYSTEM /rl HIGHEST /F'
 ```
 
-2. Se ele responder com um texto falando `TaskPath` e `TaskName`, **deu tudo certo!**
+2. Se ele responder **"Êxito: a tarefa agendada foi criada"**, **deu tudo certo!**
 3. Reinicie o computador.
 
 **🎉 Fim!** Assim que o PC ligar, o agente já vai começar a trabalhar invisível e enviar os dados do HD a cada 5 minutos lá para o painel da sua plataforma Web.
