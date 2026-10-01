@@ -4,6 +4,7 @@ import { OccurrenceController } from '../controllers/occurrence-controller.js';
 const occurrenceController = new OccurrenceController();
 
 export async function occurrenceRoutes(app: FastifyInstance) {
+  app.get('/', occurrenceController.getAll);
   app.post('/', occurrenceController.create);
   // Rotas aninhadas de ocorrência no equipamento (registradas no root ou com prefixo)
   app.get('/equipment/:id', occurrenceController.getByEquipmentId);

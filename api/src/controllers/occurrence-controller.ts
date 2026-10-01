@@ -39,4 +39,13 @@ export class OccurrenceController {
 
     return reply.send(history);
   }
+
+  async getAll(request: FastifyRequest, reply: FastifyReply) {
+    const history = await db
+      .select()
+      .from(occurrences)
+      .orderBy(desc(occurrences.created_at));
+
+    return reply.send(history);
+  }
 }
