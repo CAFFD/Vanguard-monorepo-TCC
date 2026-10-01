@@ -4,11 +4,9 @@ import { NavLink, Outlet } from 'react-router-dom';
 export const Layout: React.FC = () => {
   const navLinks = [
     { to: '/', label: 'Overview' },
-    { to: '/equipamentos', label: 'Prontuários' },
-    { to: '/usuarios/cadastrar', label: 'Usuários' },
-    { to: '/equipamentos/cadastrar', label: 'Equipamentos' },
-    { to: '/chamados/cadastrar', label: 'Chamados' },
-    { to: '/setores/cadastrar', label: 'Setores' },
+    { to: '/chamados', label: 'Chamados' },
+    { to: '/equipamentos', label: 'Equipamentos' },
+    { to: '/configuracoes', label: 'Configurações' },
   ];
 
   return (
