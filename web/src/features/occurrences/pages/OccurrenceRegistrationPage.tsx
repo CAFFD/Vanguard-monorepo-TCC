@@ -8,7 +8,7 @@ import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../components/feedback/ToastContext';
 import { occurrenceSchema } from '../schemas/occurrenceSchema';
 import type { OccurrenceFormData } from '../schemas/occurrenceSchema';
-import { StorageService } from '../../../services/storage';
+
 import { apiFetch } from '../../../lib/api';
 import type { Equipment } from '../../equipments/types';
 import type { User } from '../../users/types';
@@ -33,32 +33,36 @@ export const OccurrenceRegistrationPage: React.FC = () => {
   });
 
   const selectedOrigin = watch('origin');
-  const selectedPriority = watch('priority');
+
   const descriptionValue = watch('description');
 
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
       try {
-        const [eqData, userData, secData] = await Promise.all([
-          Promise.resolve(StorageService.getEquipments()),
-          Promise.resolve(StorageService.getUsers()),
-          StorageService.getSectors()
+        const [eqRes, userRes, secRes] = await Promise.all([
+          apiFetch('/equipments'),
+          apiFetch('/users'),
+          apiFetch('/sectors')
         ]);
         
+        const eqData = eqRes.ok ? await eqRes.json() : [];
+        const userData = userRes.ok ? await userRes.json() : [];
+        const secData = secRes.ok ? await secRes.json() : [];
+
         if (isMounted) {
           setEquipments(eqData);
-          setTechnicians(userData.filter(u => u.role === 'TECNICO'));
+          setTechnicians(userData.filter((u: any) => u.role === 'TECNICO'));
           
           const sMap: Record<string, string> = {};
-          secData.forEach(s => { sMap[s.id] = s.name; });
+          secData.forEach((s: any) => { sMap[s.id] = s.name; });
           setSectorsMap(sMap);
           
           setLoading(false);
         }
       } catch (error) {
         if (isMounted) {
-          showToast('error', 'Falha ao carregar dados necessários.');
+          showToast('error', 'Falha ao carregar dados necessários da API.');
           setLoading(false);
         }
       }
@@ -104,43 +108,35 @@ export const OccurrenceRegistrationPage: React.FC = () => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'BAIXA': return 'bg-gray-50 border-gray-200 text-gray-700';
-      case 'MEDIA': return 'bg-blue-50 border-blue-200 text-blue-800';
-      case 'ALTA': return 'bg-[var(--color-warning-bg)] border-[var(--color-warning)] text-[var(--color-warning)]';
-      case 'CRITICA': return 'bg-[var(--color-danger-bg)] border-[var(--color-danger)] text-[var(--color-danger)]';
-      default: return 'bg-[var(--color-background)] border-[var(--color-border)]';
-    }
-  };
+
 
   const hasEquipments = equipments.length > 0;
   const hasTechnicians = technicians.length > 0;
   const canSubmit = hasEquipments && hasTechnicians && !loading;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Abrir chamado</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Registre uma ocorrência relacionada a um equipamento e encaminhe-a para atendimento técnico.</p>
+    <div className="max-w-3xl mx-auto w-full pb-12">
+      <div className="mb-6 border-b border-white/10 pb-4">
+        <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Abrir chamado</h2>
+        <p className="text-sm text-zinc-500 mt-1">Registre uma ocorrência relacionada a um equipamento e encaminhe-a para atendimento técnico.</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-6 md:p-8">
+      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
         
         {(!hasEquipments || !hasTechnicians) && !loading && (
-          <div className="mb-6 p-4 rounded-md bg-[var(--color-danger-bg)] border border-[var(--color-danger)] text-[var(--color-danger)] text-sm flex gap-3 items-start">
+          <div className="mb-6 p-4 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex gap-3 items-start">
             <AlertCircle size={20} className="shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold mb-1">Pré-requisitos ausentes</p>
               <ul className="list-disc ml-5 space-y-1">
                 {!hasEquipments && (
                   <li>
-                    Não há equipamentos cadastrados. <Link to="/equipamentos/cadastrar" className="underline font-medium hover:text-red-800">Cadastrar equipamento</Link>.
+                    Não há equipamentos cadastrados. <Link to="/equipamentos/cadastrar" className="underline font-medium hover:text-red-300">Cadastrar equipamento</Link>.
                   </li>
                 )}
                 {!hasTechnicians && (
                   <li>
-                    Não há técnicos cadastrados. <Link to="/usuarios/cadastrar" className="underline font-medium hover:text-red-800">Cadastrar usuário técnico</Link>.
+                    Não há técnicos cadastrados. <Link to="/usuarios/cadastrar" className="underline font-medium hover:text-red-300">Cadastrar usuário técnico</Link>.
                   </li>
                 )}
               </ul>
@@ -171,10 +167,8 @@ export const OccurrenceRegistrationPage: React.FC = () => {
               }))}
               disabled={loading || !hasTechnicians}
             />
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-[var(--color-background)] p-4 rounded-md border border-[var(--color-border)] flex flex-col h-full">
+            <div className="flex flex-col">
               <Select
                 label="Origem"
                 {...register('origin')}
@@ -186,30 +180,28 @@ export const OccurrenceRegistrationPage: React.FC = () => {
                 ]}
                 disabled={loading}
               />
-              <div className="mt-3 flex gap-2 text-sm text-[var(--color-text-secondary)]">
-                <Info size={16} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
-                <div>
-                  {selectedOrigin === 'SOLICITACAO_USUARIO' && <p>Problema informado por um servidor.</p>}
-                  {selectedOrigin === 'IDENTIFICACAO_TECNICA' && <p>Falha encontrada durante inspeção.</p>}
-                  {selectedOrigin === 'TELEMETRIA' && <p>Alerta produzido por monitoramento automatizado.</p>}
-                </div>
+              <div className="mt-2 text-xs text-zinc-500 flex gap-1.5 items-start">
+                <Info size={14} className="shrink-0 mt-0.5" />
+                <span>
+                  {selectedOrigin === 'SOLICITACAO_USUARIO' && 'Problema informado por um servidor.'}
+                  {selectedOrigin === 'IDENTIFICACAO_TECNICA' && 'Falha encontrada durante inspeção.'}
+                  {selectedOrigin === 'TELEMETRIA' && 'Alerta produzido por monitoramento automatizado.'}
+                </span>
               </div>
             </div>
 
-            <div className={`p-4 rounded-md border transition-colors flex flex-col h-full ${getPriorityColor(selectedPriority)}`}>
-              <Select
-                label="Prioridade"
-                {...register('priority')}
-                error={errors.priority?.message}
-                options={[
-                  { value: 'BAIXA', label: 'Baixa' },
-                  { value: 'MEDIA', label: 'Média' },
-                  { value: 'ALTA', label: 'Alta' },
-                  { value: 'CRITICA', label: 'Crítica' }
-                ]}
-                disabled={loading}
-              />
-            </div>
+            <Select
+              label="Prioridade"
+              {...register('priority')}
+              error={errors.priority?.message}
+              options={[
+                { value: 'BAIXA', label: 'Baixa' },
+                { value: 'MEDIA', label: 'Média' },
+                { value: 'ALTA', label: 'Alta' },
+                { value: 'CRITICA', label: 'Crítica' }
+              ]}
+              disabled={loading}
+            />
           </div>
 
           <div className="flex flex-col gap-1">
@@ -218,21 +210,21 @@ export const OccurrenceRegistrationPage: React.FC = () => {
             </label>
             <textarea
               id="description"
-              className={`px-3 py-2 border rounded-md text-sm outline-none transition-colors min-h-[120px] resize-y
+              className={`px-3 py-2 border rounded-md text-sm outline-none transition-colors min-h-[120px] resize-y bg-[var(--color-surface)] text-[var(--color-text-main)] placeholder-zinc-700
                 ${errors.description 
                   ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-1 focus:ring-[var(--color-danger)]' 
                   : 'border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]'
                 }
-                disabled:bg-gray-100 disabled:text-gray-500`}
+                disabled:opacity-50 disabled:cursor-not-allowed`}
               placeholder="Descreva o problema observado, quando começou e como ele afeta o uso do equipamento."
               {...register('description')}
               disabled={loading}
             />
             <div className="flex justify-between mt-1">
-              <span className={`text-xs ${errors.description ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)]'}`}>
+              <span className={`text-xs ${errors.description ? 'text-[var(--color-danger)]' : 'text-zinc-500'}`}>
                 {errors.description?.message}
               </span>
-              <span className="text-xs text-[var(--color-text-secondary)]">
+              <span className="text-xs text-zinc-500 font-mono">
                 {descriptionValue.length}/1000
               </span>
             </div>

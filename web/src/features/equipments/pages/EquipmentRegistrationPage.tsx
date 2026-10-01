@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Info } from 'lucide-react';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Button } from '../../../components/ui/Button';
@@ -101,13 +100,13 @@ export const EquipmentRegistrationPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Cadastrar equipamento</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Registre um novo ativo tecnológico e vincule-o ao setor responsável.</p>
+    <div className="max-w-3xl mx-auto w-full pb-12">
+      <div className="mb-6 border-b border-white/10 pb-4">
+        <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Cadastrar Equipamento</h2>
+        <p className="text-sm text-zinc-500 mt-1">Registre um novo ativo tecnológico e vincule-o ao setor responsável.</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-6 md:p-8">
+      <div className="rounded-md border border-white/10 bg-zinc-950 p-6 md:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
@@ -130,7 +129,7 @@ export const EquipmentRegistrationPage: React.FC = () => {
               placeholder="AA:BB:CC:DD:EE:FF"
               {...register('macAddress')}
               onChange={(e) => {
-                register('macAddress').onChange(e); // allow react-hook-form to track
+                register('macAddress').onChange(e);
                 handleMacChange(e);
               }}
               error={errors.macAddress?.message}
@@ -146,20 +145,19 @@ export const EquipmentRegistrationPage: React.FC = () => {
             />
           </div>
 
-          <div className="bg-[var(--color-background)] p-4 rounded-md border border-[var(--color-border)]">
-            <h3 className="text-sm font-medium text-[var(--color-text-main)] mb-2">Estado de saúde</h3>
-            <div className="flex gap-2 text-sm text-[var(--color-text-secondary)]">
-              <Info size={18} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
-              <p>O estado de saúde será definido automaticamente após o recebimento da telemetria do equipamento.</p>
-            </div>
+          <div className="bg-zinc-900/50 p-4 rounded-md border border-white/5">
+            <h3 className="text-xs font-mono font-medium text-zinc-300 uppercase tracking-widest mb-1.5">Telemetria Automática</h3>
+            <p className="text-sm text-zinc-500">
+              O estado de saúde será definido automaticamente após o primeiro sinal do Agente Go instalado na máquina.
+            </p>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-white/10">
             <Button type="button" variant="secondary" onClick={handleReset} disabled={isSubmitting}>
               Limpar formulário
             </Button>
             <Button type="submit" isLoading={isSubmitting}>
-              Cadastrar equipamento
+              Cadastrar
             </Button>
           </div>
         </form>

@@ -19,12 +19,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           id={inputId}
           ref={ref}
-          className={`px-3 py-2 border rounded-md text-sm outline-none transition-colors 
+          className={`px-3 py-2 border rounded-md text-sm outline-none transition-colors bg-[var(--color-surface)] text-[var(--color-text-main)] placeholder-zinc-700
             ${isError 
               ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-1 focus:ring-[var(--color-danger)]' 
               : 'border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]'
             }
-            disabled:bg-gray-100 disabled:text-gray-500`}
+            disabled:opacity-50 disabled:cursor-not-allowed`}
           {...props}
         />
         {(error || helperText) && (

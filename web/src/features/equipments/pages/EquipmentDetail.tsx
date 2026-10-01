@@ -7,8 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { occurrenceSchema } from '../../occurrences/schemas/occurrenceSchema';
 import type { OccurrenceFormData } from '../../occurrences/schemas/occurrenceSchema';
 import { Select } from '../../../components/ui/Select';
-import { Button } from '../../../components/ui/Button';
-
 interface Equipment {
   id: string;
   patrimony_tag: string;
@@ -105,74 +103,77 @@ export const EquipmentDetail: React.FC = () => {
       showToast('success', 'Manutenção registrada com sucesso!');
       reset();
       setShowForm(false);
-      fetchData(); // Recarrega histórico
+      fetchData();
     } catch (error: any) {
       showToast('error', error.message);
     }
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Carregando prontuário...</div>;
+    return <div className="p-8 text-center text-zinc-500 font-mono text-sm">Carregando prontuário...</div>;
   }
 
   if (!equipment) {
-    return <div className="p-8 text-center text-red-600">Equipamento não encontrado.</div>;
+    return <div className="p-8 text-center text-red-500 font-mono text-sm">Equipamento não encontrado.</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="max-w-4xl mx-auto pb-12 w-full">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/10 pb-4">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Prontuário do Equipamento</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Histórico médico e manutenções do ativo.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-xl font-medium text-zinc-100">{equipment.hostname}</h2>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 border border-white/10 rounded-full bg-zinc-900/50">
+               <div className={`w-1.5 h-1.5 rounded-full ${
+                  equipment.health_status === 'NORMAL' ? 'bg-emerald-500' : 
+                  equipment.health_status === 'ATENÇÃO' ? 'bg-amber-500' :
+                  equipment.health_status === 'CRÍTICO' ? 'bg-red-500' : 'bg-zinc-500'
+                }`} />
+                <span className="text-[10px] font-mono text-zinc-300 tracking-wider">
+                  {equipment.health_status}
+                </span>
+            </div>
+          </div>
+          <p className="text-sm text-zinc-500 font-mono">ID: {equipment.id}</p>
         </div>
-        <Link to="/equipamentos" className="text-sm font-medium text-[var(--color-primary)] hover:underline">
-          &larr; Voltar para lista
+        <Link to="/equipamentos" className="mt-4 sm:mt-0 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors">
+          &larr; Voltar
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-6 mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-[var(--color-text-secondary)] font-medium uppercase">Hostname</p>
-            <p className="font-semibold">{equipment.hostname}</p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--color-text-secondary)] font-medium uppercase">Patrimônio</p>
-            <p className="font-semibold">{equipment.patrimony_tag}</p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--color-text-secondary)] font-medium uppercase">MAC Address</p>
-            <p className="font-mono text-sm">{equipment.mac_address}</p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--color-text-secondary)] font-medium uppercase">Saúde Atual</p>
-            <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-xs font-bold border
-              ${equipment.health_status === 'NORMAL' 
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                : equipment.health_status === 'OFFLINE'
-                ? 'bg-gray-100 text-gray-700 border-gray-300'
-                : equipment.health_status === 'ATENÇÃO'
-                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                : 'bg-red-50 text-red-700 border-red-200'}`}>
-              {equipment.health_status}
-            </span>
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">Hostname</p>
+          <p className="font-mono text-sm text-zinc-200">{equipment.hostname}</p>
+        </div>
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">Patrimônio</p>
+          <p className="font-mono text-sm text-zinc-200">{equipment.patrimony_tag}</p>
+        </div>
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">MAC Address</p>
+          <p className="font-mono text-sm text-zinc-200">{equipment.mac_address}</p>
+        </div>
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">Sector ID</p>
+          <p className="font-mono text-sm text-zinc-200">{equipment.sector_id.slice(0,8)}...</p>
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-[var(--color-text-main)]">Histórico de Ocorrências</h3>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancelar Registro' : 'Registrar Manutenção'}
-        </Button>
+      <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+        <h3 className="text-sm font-medium text-zinc-100">Log de Ocorrências</h3>
+        <button 
+          onClick={() => setShowForm(!showForm)}
+          className="text-xs font-medium text-zinc-100 bg-zinc-800 border border-white/10 px-3 py-1.5 rounded-md hover:bg-zinc-700 transition-colors"
+        >
+          {showForm ? 'Cancelar' : '+ Registrar Manutenção'}
+        </button>
       </div>
 
       {showForm && (
-        <div className="bg-gray-50 rounded-lg border border-[var(--color-border)] p-6 mb-8">
-          <h4 className="font-bold mb-4">Nova Manutenção / Intervenção</h4>
+        <div className="rounded-md border border-white/10 bg-zinc-900/50 p-6 mb-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
                 label="Origem da Falha"
                 {...register('origin')}
@@ -197,34 +198,40 @@ export const EquipmentDetail: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Descrição do Problema Observado</label>
+              <label className="text-xs font-medium text-zinc-400">Descrição do Problema</label>
               <textarea
-                className="w-full mt-1 p-2 border rounded-md min-h-[80px]"
+                className="w-full mt-1.5 p-3 text-sm bg-zinc-950 border border-white/10 rounded-md text-zinc-200 placeholder-zinc-700 min-h-[80px] focus:outline-none focus:border-zinc-500"
                 {...register('description')}
               />
-              {errors.description && <span className="text-xs text-red-500">{errors.description.message}</span>}
+              {errors.description && <span className="text-xs text-red-500 mt-1 block">{errors.description.message}</span>}
             </div>
 
             <div>
-              <label className="text-sm font-medium">Diagnóstico Técnico (Opcional)</label>
+              <label className="text-xs font-medium text-zinc-400">Diagnóstico Técnico (Opcional)</label>
               <textarea
-                className="w-full mt-1 p-2 border rounded-md min-h-[60px]"
+                className="w-full mt-1.5 p-3 text-sm bg-zinc-950 border border-white/10 rounded-md text-zinc-200 placeholder-zinc-700 min-h-[60px] focus:outline-none focus:border-zinc-500"
                 {...register('diagnosis')}
               />
-              {errors.diagnosis && <span className="text-xs text-red-500">{errors.diagnosis.message}</span>}
+              {errors.diagnosis && <span className="text-xs text-red-500 mt-1 block">{errors.diagnosis.message}</span>}
             </div>
 
             <div>
-              <label className="text-sm font-medium">Ação Tomada / Solução Aplicada</label>
+              <label className="text-xs font-medium text-zinc-400">Ação Tomada</label>
               <textarea
-                className="w-full mt-1 p-2 border rounded-md min-h-[80px]"
+                className="w-full mt-1.5 p-3 text-sm bg-zinc-950 border border-white/10 rounded-md text-zinc-200 placeholder-zinc-700 min-h-[80px] focus:outline-none focus:border-zinc-500"
                 {...register('actionTaken')}
               />
-              {errors.actionTaken && <span className="text-xs text-red-500">{errors.actionTaken.message}</span>}
+              {errors.actionTaken && <span className="text-xs text-red-500 mt-1 block">{errors.actionTaken.message}</span>}
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" isLoading={isSubmitting}>Salvar Registro</Button>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="text-xs font-medium text-zinc-950 bg-zinc-100 px-4 py-2 rounded-md hover:bg-white transition-colors disabled:opacity-50"
+              >
+                Salvar Registro
+              </button>
             </div>
           </form>
         </div>
@@ -232,42 +239,44 @@ export const EquipmentDetail: React.FC = () => {
 
       <div className="space-y-4">
         {occurrences.length === 0 ? (
-          <p className="text-center text-[var(--color-text-secondary)] py-8 border rounded-lg bg-white">
-            Nenhuma ocorrência registrada para este equipamento.
-          </p>
+          <div className="p-8 text-center border border-white/5 rounded-md bg-zinc-900/20">
+            <p className="text-sm font-mono text-zinc-500">Nenhum evento registrado.</p>
+          </div>
         ) : (
           occurrences.map((occ) => (
-            <div key={occ.id} className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-5">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold mr-2
-                    ${occ.priority === 'CRITICA' ? 'bg-red-100 text-red-800' : 
-                      occ.priority === 'ALTA' ? 'bg-orange-100 text-orange-800' :
-                      occ.priority === 'MEDIA' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+            <div key={occ.id} className="rounded-md border border-white/10 bg-zinc-950 p-5">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <span className={`px-2 py-0.5 rounded-sm border text-[10px] font-mono tracking-widest uppercase
+                    ${occ.priority === 'CRITICA' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 
+                      occ.priority === 'ALTA' ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' :
+                      occ.priority === 'MEDIA' ? 'border-zinc-500/30 text-zinc-300 bg-zinc-500/10' : 'border-zinc-700 text-zinc-400'}`}>
                     {occ.priority}
                   </span>
-                  <span className="text-xs text-gray-500">Origem: {occ.origin}</span>
+                  <span className="text-xs text-zinc-500 font-mono">Origin: {occ.origin}</span>
                 </div>
-                <span className="text-xs font-mono text-gray-500">
+                <span className="text-xs font-mono text-zinc-500">
                   {new Date(occ.created_at).toLocaleString('pt-BR')}
                 </span>
               </div>
               
-              <div className="mb-3">
-                <h5 className="text-xs font-bold uppercase text-gray-500 mb-1">Problema:</h5>
-                <p className="text-sm text-gray-800">{occ.description}</p>
-              </div>
-
-              {occ.diagnosis && (
-                <div className="mb-3">
-                  <h5 className="text-xs font-bold uppercase text-gray-500 mb-1">Diagnóstico:</h5>
-                  <p className="text-sm text-gray-800">{occ.diagnosis}</p>
+              <div className="space-y-4">
+                <div>
+                  <h5 className="text-[10px] font-medium uppercase text-zinc-500 tracking-widest mb-1">Issue</h5>
+                  <p className="text-sm text-zinc-300">{occ.description}</p>
                 </div>
-              )}
 
-              <div className="bg-gray-50 rounded p-3 border border-gray-100">
-                <h5 className="text-xs font-bold uppercase text-emerald-700 mb-1">Ação Tomada:</h5>
-                <p className="text-sm text-gray-800 font-medium">{occ.action_taken || 'Nenhuma ação documentada.'}</p>
+                {occ.diagnosis && (
+                  <div>
+                    <h5 className="text-[10px] font-medium uppercase text-zinc-500 tracking-widest mb-1">Diagnosis</h5>
+                    <p className="text-sm text-zinc-300">{occ.diagnosis}</p>
+                  </div>
+                )}
+
+                <div>
+                  <h5 className="text-[10px] font-medium uppercase text-zinc-500 tracking-widest mb-1">Resolution</h5>
+                  <p className="text-sm text-zinc-300">{occ.action_taken || '-'}</p>
+                </div>
               </div>
             </div>
           ))

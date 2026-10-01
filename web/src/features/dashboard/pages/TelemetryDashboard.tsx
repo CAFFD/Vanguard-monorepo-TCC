@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, AlertTriangle, XCircle, WifiOff, Activity } from 'lucide-react';
 import { apiFetch } from '../../../lib/api';
 import { useToast } from '../../../components/feedback/ToastContext';
 
@@ -49,7 +48,6 @@ export const TelemetryDashboard: React.FC = () => {
         if (isMounted) {
           setStatusCounts(statusData);
           
-          // Filtragem no frontend: CRÍTICO, ATENÇÃO e OFFLINE são considerados riscos
           const atRisk = equipmentsData.filter(
             (eq) => eq.health_status === 'CRÍTICO' || eq.health_status === 'ATENÇÃO' || eq.health_status === 'OFFLINE'
           );
@@ -60,164 +58,143 @@ export const TelemetryDashboard: React.FC = () => {
         }
       } catch (error: any) {
         if (isMounted) {
-          showToast('error', error.message || 'Erro ao atualizar o Dashboard NOC.');
-          // Não alteramos o loading para false imediatamente na primeira falha 
-          // caso já tenha carregado antes, para não piscar a tela. 
-          // Mas se for o primeiro carregamento, tiramos o loading.
+          showToast('error', error.message || 'Erro ao atualizar dados NOC.');
           if (loading) setLoading(false);
         }
       }
     };
 
-    // Executa imediatamente na montagem
     fetchData();
-
-    // Configura o Polling de 60 segundos
     const intervalId = setInterval(fetchData, 60000);
 
-    // Cleanup para evitar Memory Leaks na desmontagem
     return () => {
       isMounted = false;
       clearInterval(intervalId);
     };
   }, [showToast, loading]);
 
-  const renderSkeletons = () => (
-    <div className="space-y-8 animate-pulse">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
-        ))}
-      </div>
-      <div className="h-64 bg-gray-200 rounded-xl"></div>
-    </div>
-  );
-
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="h-8 w-64 bg-gray-200 rounded mb-2 animate-pulse"></div>
-          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+      <div className="w-full">
+        <div className="h-6 w-48 bg-zinc-800 rounded-md mb-8"></div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 bg-zinc-900 border border-white/5 rounded-md"></div>
+          ))}
         </div>
-        {renderSkeletons()}
+        <div className="h-64 bg-zinc-900 border border-white/5 rounded-md"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
-      <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+    <div className="w-full pb-12">
+      {/* Header minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-white/10 pb-5">
         <div>
-          <h2 className="text-3xl font-extrabold text-[var(--color-text-main)] flex items-center gap-3">
-            <Activity className="w-8 h-8 text-blue-600" />
-            Dashboard NOC
-          </h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1 font-medium">
-            Centro de Operações de Rede - Monitoramento de Saúde de Ativos
-          </p>
+          <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Centro de Operações (NOC)</h2>
+          <p className="text-sm text-zinc-500 mt-1">Visão técnica do parque e telemetria em tempo real.</p>
         </div>
-        <div className="text-sm font-medium text-gray-500 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
-          Última atualização: <span className="text-gray-900">{lastUpdate.toLocaleTimeString('pt-BR')}</span>
+        <div className="text-xs font-mono text-zinc-500 flex items-center gap-2 mt-4 sm:mt-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse"></span>
+          Live · {lastUpdate.toLocaleTimeString('pt-BR')}
         </div>
       </div>
 
-      {/* Painel de Indicadores */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-6 flex flex-col items-center justify-center text-center transition-transform hover:scale-105">
-          <CheckCircle className="w-10 h-10 text-emerald-500 mb-3" />
-          <h3 className="text-4xl font-black text-emerald-600 mb-1">{statusCounts.normal}</h3>
-          <p className="text-sm font-bold text-gray-600 uppercase tracking-wider">Normal</p>
+      {/* Métricas Técnicas (Grid Vercel-style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40 hover:bg-zinc-900 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">Normal</span>
+          </div>
+          <div className="text-3xl font-mono text-zinc-100 tracking-tighter">{statusCounts.normal}</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6 flex flex-col items-center justify-center text-center transition-transform hover:scale-105">
-          <AlertTriangle className="w-10 h-10 text-amber-500 mb-3" />
-          <h3 className="text-4xl font-black text-amber-600 mb-1">{statusCounts.atencao}</h3>
-          <p className="text-sm font-bold text-gray-600 uppercase tracking-wider">Atenção</p>
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40 hover:bg-zinc-900 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">Atenção</span>
+          </div>
+          <div className="text-3xl font-mono text-zinc-100 tracking-tighter">{statusCounts.atencao}</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-red-100 p-6 flex flex-col items-center justify-center text-center transition-transform hover:scale-105">
-          <XCircle className="w-10 h-10 text-red-500 mb-3" />
-          <h3 className="text-4xl font-black text-red-600 mb-1">{statusCounts.critico}</h3>
-          <p className="text-sm font-bold text-gray-600 uppercase tracking-wider">Crítico</p>
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40 hover:bg-zinc-900 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">Crítico</span>
+          </div>
+          <div className="text-3xl font-mono text-zinc-100 tracking-tighter">{statusCounts.critico}</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col items-center justify-center text-center transition-transform hover:scale-105">
-          <WifiOff className="w-10 h-10 text-gray-400 mb-3" />
-          <h3 className="text-4xl font-black text-gray-600 mb-1">{statusCounts.offline}</h3>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Offline</p>
+        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40 hover:bg-zinc-900 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-zinc-500"></div>
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">Offline</span>
+          </div>
+          <div className="text-3xl font-mono text-zinc-100 tracking-tighter">{statusCounts.offline}</div>
         </div>
+
       </div>
 
-      {/* Fila de Triagem */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <AlertTriangle className="w-6 h-6 text-red-600" />
-          <h3 className="text-xl font-bold text-[var(--color-text-main)]">
-            Fila de Triagem (Equipamentos em Risco)
-          </h3>
-        </div>
+      {/* Fila de Triagem Densa */}
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-zinc-100">Equipamentos em Risco</h3>
+        <span className="text-xs font-mono text-zinc-500">{riskEquipments.length} found</span>
+      </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-[var(--color-border)] overflow-hidden">
-          {riskEquipments.length === 0 ? (
-            <div className="p-12 text-center flex flex-col items-center justify-center">
-              <CheckCircle className="w-12 h-12 text-emerald-400 mb-4" />
-              <p className="text-lg font-bold text-emerald-700">Parque Tecnológico Estável</p>
-              <p className="text-gray-500">Nenhum equipamento apresenta falhas iminentes no momento.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-[var(--color-text-secondary)] uppercase bg-gray-50 border-b border-[var(--color-border)]">
-                  <tr>
-                    <th className="px-6 py-4 font-bold">Patrimônio / Hostname</th>
-                    <th className="px-6 py-4 font-bold">Endereço MAC</th>
-                    <th className="px-6 py-4 font-bold">Status de Risco</th>
-                    <th className="px-6 py-4 font-bold text-right">Ação Rápida</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-border)]">
-                  {riskEquipments.map((eq) => (
-                    <tr key={eq.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-[var(--color-text-main)]">{eq.patrimony_tag}</div>
-                        <div className="text-[var(--color-text-secondary)]">{eq.hostname}</div>
-                      </td>
-                      <td className="px-6 py-4 text-[var(--color-text-secondary)] font-mono text-xs">
-                        {eq.mac_address}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 w-max
-                          ${eq.health_status === 'CRÍTICO' 
-                            ? 'bg-red-50 text-red-700 border-red-200' 
-                            : eq.health_status === 'ATENÇÃO'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-gray-100 text-gray-700 border-gray-300'}`}>
-                          {eq.health_status === 'CRÍTICO' ? (
-                            <XCircle className="w-3 h-3" />
-                          ) : eq.health_status === 'ATENÇÃO' ? (
-                            <AlertTriangle className="w-3 h-3" />
-                          ) : (
-                            <WifiOff className="w-3 h-3" />
-                          )}
+      <div className="rounded-md border border-white/10 overflow-hidden bg-zinc-950">
+        {riskEquipments.length === 0 ? (
+          <div className="p-8 text-center border-t border-white/5 bg-zinc-900/20">
+            <p className="text-sm font-mono text-zinc-400">0 equipamentos apresentando anomalias.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-zinc-500 border-b border-white/10 bg-zinc-900/50">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Equipamento</th>
+                  <th className="px-4 py-2 font-medium">MAC Address</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 text-right font-medium">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {riskEquipments.map((eq) => (
+                  <tr key={eq.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="px-4 py-2.5">
+                      <div className="font-mono text-zinc-200">{eq.patrimony_tag}</div>
+                      <div className="text-xs text-zinc-500">{eq.hostname}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-zinc-400 font-mono text-xs">
+                      {eq.mac_address}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          eq.health_status === 'CRÍTICO' ? 'bg-red-500' : 
+                          eq.health_status === 'ATENÇÃO' ? 'bg-amber-500' : 'bg-zinc-500'
+                        }`} />
+                        <span className="text-xs font-mono text-zinc-300">
                           {eq.health_status}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Link 
-                          to={`/equipamentos/${eq.id}`}
-                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                        >
-                          Analisar e Intervir
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <Link 
+                        to={`/equipamentos/${eq.id}`}
+                        className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium text-zinc-100 bg-zinc-800 border border-white/10 rounded-md hover:bg-zinc-700 hover:border-zinc-500 transition-colors shadow-sm"
+                      >
+                        Investigar
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -72,15 +72,15 @@ export const UserRegistrationPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Cadastrar usuário</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+    <div className="max-w-3xl mx-auto w-full pb-12">
+      <div className="mb-6 border-b border-white/10 pb-4">
+        <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Cadastrar usuário</h2>
+        <p className="text-sm text-zinc-500 mt-1">
           Registre um novo profissional com acesso ao sistema de gestão de ativos.
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-6 md:p-8">
+      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
@@ -101,7 +101,7 @@ export const UserRegistrationPage: React.FC = () => {
             />
           </div>
 
-          <div className="bg-[var(--color-background)] p-4 rounded-md border border-[var(--color-border)]">
+          <div className="flex flex-col">
             <Select
               label="Perfil de acesso"
               {...register('role')}
@@ -111,11 +111,11 @@ export const UserRegistrationPage: React.FC = () => {
                 { value: 'TECNICO', label: 'Técnico' }
               ]}
             />
-            <div className="mt-3 flex gap-2 text-sm text-[var(--color-text-secondary)]">
-              <Info size={16} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
-              <div>
-                <p><strong>Gestor:</strong> acompanha a saúde do parque, alertas e informações gerenciais dos ativos.</p>
-                <p><strong>Técnico:</strong> analisa alertas, realiza manutenções e registra intervenções nos equipamentos.</p>
+            <div className="mt-2 text-xs text-zinc-500 flex gap-1.5 items-start">
+              <Info size={14} className="shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p><strong className="font-medium text-zinc-300">Gestor:</strong> acompanha a saúde do parque, alertas e informações gerenciais.</p>
+                <p><strong className="font-medium text-zinc-300">Técnico:</strong> analisa alertas, realiza manutenções e registra intervenções.</p>
               </div>
             </div>
           </div>

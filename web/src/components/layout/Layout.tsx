@@ -1,109 +1,52 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Menu, X, Users, Monitor, Shield, Building2, ClipboardList, Server, Activity } from 'lucide-react';
 
 export const Layout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
   const navLinks = [
-    { to: '/', label: 'Dashboard NOC', icon: <Activity size={18} /> },
-    { to: '/equipamentos', label: 'Prontuário', icon: <Server size={18} /> },
-    { to: '/usuarios/cadastrar', label: 'Cadastrar usuário', icon: <Users size={18} /> },
-    { to: '/equipamentos/cadastrar', label: 'Cadastrar equipamento', icon: <Monitor size={18} /> },
-    { to: '/chamados/cadastrar', label: 'Cadastrar chamado', icon: <ClipboardList size={18} /> },
-    { to: '/setores/cadastrar', label: 'Cadastrar setor', icon: <Building2 size={18} /> },
+    { to: '/', label: 'Overview' },
+    { to: '/equipamentos', label: 'Prontuários' },
+    { to: '/usuarios/cadastrar', label: 'Usuários' },
+    { to: '/equipamentos/cadastrar', label: 'Equipamentos' },
+    { to: '/chamados/cadastrar', label: 'Chamados' },
+    { to: '/setores/cadastrar', label: 'Setores' },
   ];
 
   return (
-    <div className="flex h-screen bg-[var(--color-background)] overflow-hidden">
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-[var(--color-border)]">
-        <div className="h-16 flex items-center px-6 border-b border-[var(--color-border)]">
-          <Shield className="text-[var(--color-primary)] mr-2" size={24} />
-          <div>
-            <h1 className="font-bold text-[var(--color-text-main)] leading-tight text-sm">Gestão de Ativos</h1>
-            <p className="text-xs text-[var(--color-text-secondary)]">Prefeitura Municipal</p>
+    <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-zinc-800">
+      {/* Top-Nav estilo Vercel */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-zinc-950/80 backdrop-blur-md">
+        <div className="flex h-14 items-center px-6 max-w-[1400px] mx-auto">
+          {/* Brand */}
+          <div className="flex items-center gap-3 pr-6 border-r border-white/10 mr-6">
+            <div className="w-3 h-3 bg-zinc-100" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <span className="font-semibold text-sm text-zinc-100 tracking-tight">Vanguard</span>
           </div>
+
+          {/* Navigation Tabs */}
+          <nav className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    isActive
+                      ? 'text-zinc-100 bg-white/10 font-medium'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
-        <nav className="flex-1 py-4 px-3 flex flex-col gap-1">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isActive
-                    ? 'bg-[var(--color-primary)] text-white'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-background)] hover:text-[var(--color-text-main)]'
-                }`
-              }
-            >
-              <span className="mr-3">{link.icon}</span>
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Mobile Header & Sidebar */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="md:hidden h-16 bg-white border-b border-[var(--color-border)] flex items-center justify-between px-4">
-          <div className="flex items-center">
-            <Shield className="text-[var(--color-primary)] mr-2" size={24} />
-            <div>
-              <h1 className="font-bold text-[var(--color-text-main)] leading-tight text-sm">Gestão de Ativos</h1>
-            </div>
-          </div>
-          <button onClick={toggleSidebar} className="text-[var(--color-text-main)] p-2">
-            <Menu size={24} />
-          </button>
-        </header>
-
-        {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
-          <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={toggleSidebar}>
-            <aside className="w-64 h-full bg-white shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
-              <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--color-border)]">
-                <div className="flex items-center">
-                  <Shield className="text-[var(--color-primary)] mr-2" size={24} />
-                  <div>
-                    <h1 className="font-bold text-sm leading-tight">Gestão de Ativos</h1>
-                    <p className="text-xs text-gray-500">Prefeitura Municipal</p>
-                  </div>
-                </div>
-                <button onClick={toggleSidebar} className="p-2">
-                  <X size={20} />
-                </button>
-              </div>
-              <nav className="flex-1 py-4 px-3 flex flex-col gap-1">
-                {navLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    onClick={toggleSidebar}
-                    className={({ isActive }) =>
-                      `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isActive
-                          ? 'bg-[var(--color-primary)] text-white'
-                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-background)]'
-                      }`
-                    }
-                  >
-                    <span className="mr-3">{link.icon}</span>
-                    {link.label}
-                  </NavLink>
-                ))}
-              </nav>
-            </aside>
-          </div>
-        )}
-
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Outlet />
-        </main>
-      </div>
+      </header>
+      
+      {/* Conteúdo Principal */}
+      <main className="max-w-[1400px] mx-auto w-full p-6 md:p-10">
+        <Outlet />
+      </main>
     </div>
   );
 };

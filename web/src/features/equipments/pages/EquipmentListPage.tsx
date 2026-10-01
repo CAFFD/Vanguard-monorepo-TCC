@@ -61,65 +61,72 @@ export const EquipmentListPage: React.FC = () => {
   }, [showToast]);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Prontuário de Equipamentos</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Visão geral de todos os computadores cadastrados e seus respectivos setores.
-        </p>
+    <div className="w-full pb-12">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/10 pb-4">
+        <div>
+          <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Prontuários</h2>
+          <p className="text-sm text-zinc-500 mt-1">
+            Gestão e histórico de todos os equipamentos do parque.
+          </p>
+        </div>
+        <div className="mt-4 sm:mt-0 text-xs font-mono text-zinc-500">
+          {equipments.length} registries
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] overflow-hidden">
+      <div className="rounded-md border border-white/10 overflow-hidden bg-zinc-950">
         {loading ? (
-          <div className="p-8 text-center text-[var(--color-text-secondary)]">Carregando dados...</div>
+          <div className="p-8 text-center text-zinc-500 font-mono text-sm">Carregando dados...</div>
         ) : equipments.length === 0 ? (
-          <div className="p-8 text-center text-[var(--color-text-secondary)]">Nenhum equipamento cadastrado.</div>
+          <div className="p-8 text-center text-zinc-500 font-mono text-sm border-t border-white/5 bg-zinc-900/20">
+            Nenhum equipamento cadastrado.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-[var(--color-text-secondary)] uppercase bg-[var(--color-background)] border-b border-[var(--color-border)]">
+              <thead className="text-xs text-zinc-500 border-b border-white/10 bg-zinc-900/50">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Patrimônio</th>
-                  <th className="px-6 py-4 font-medium">Hostname</th>
-                  <th className="px-6 py-4 font-medium">Endereço MAC</th>
-                  <th className="px-6 py-4 font-medium">Setor</th>
-                  <th className="px-6 py-4 font-medium">Saúde</th>
-                  <th className="px-6 py-4 font-medium text-right">Ações</th>
+                  <th className="px-4 py-2 font-medium">Patrimônio</th>
+                  <th className="px-4 py-2 font-medium">Hostname</th>
+                  <th className="px-4 py-2 font-medium">Endereço MAC</th>
+                  <th className="px-4 py-2 font-medium">Setor</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
+              <tbody className="divide-y divide-white/5">
                 {equipments.map((equipment) => (
-                  <tr key={equipment.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-[var(--color-text-main)]">
+                  <tr key={equipment.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="px-4 py-2.5 font-mono text-zinc-200">
                       {equipment.patrimony_tag}
                     </td>
-                    <td className="px-6 py-4 text-[var(--color-text-secondary)]">
+                    <td className="px-4 py-2.5 text-zinc-400">
                       {equipment.hostname}
                     </td>
-                    <td className="px-6 py-4 text-[var(--color-text-secondary)] font-mono">
+                    <td className="px-4 py-2.5 text-zinc-500 font-mono text-xs">
                       {equipment.mac_address}
                     </td>
-                    <td className="px-6 py-4 text-[var(--color-text-secondary)]">
+                    <td className="px-4 py-2.5 text-zinc-400">
                       {sectors[equipment.sector_id] || 'Desconhecido'}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${equipment.health_status === 'NORMAL' 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : equipment.health_status === 'OFFLINE'
-                          ? 'bg-gray-100 text-gray-700 border-gray-300'
-                          : equipment.health_status === 'ATENÇÃO'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : 'bg-red-50 text-red-700 border-red-200'}`}>
-                        {equipment.health_status}
-                      </span>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          equipment.health_status === 'NORMAL' ? 'bg-emerald-500' : 
+                          equipment.health_status === 'ATENÇÃO' ? 'bg-amber-500' :
+                          equipment.health_status === 'CRÍTICO' ? 'bg-red-500' : 'bg-zinc-500'
+                        }`} />
+                        <span className="text-xs font-mono text-zinc-300">
+                          {equipment.health_status}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       <Link 
                         to={`/equipamentos/${equipment.id}`}
-                        className="text-[var(--color-primary)] hover:underline text-sm font-medium"
+                        className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium text-zinc-100 bg-zinc-800 border border-white/10 rounded-md hover:bg-zinc-700 hover:border-zinc-500 transition-colors shadow-sm"
                       >
-                        Prontuário
+                        Abrir
                       </Link>
                     </td>
                   </tr>
