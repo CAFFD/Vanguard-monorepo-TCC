@@ -1,0 +1,28 @@
+{
+  "json_format_version": [1, 0],
+  "smartctl": {
+    "version": [7, 5], "pre_release": false, "svn_revision": "5714",
+    "platform_info": "x86_64-w64-mingw32-w11-b26200", "build_info": "(AppVeyor)",
+    "argv": ["smartctl", "-a", "-j", "-d", "sat", "/dev/sda"],
+    "exit_status": 0
+  },
+  "local_time": { "time_t": 1791222796, "asctime": "Mon Oct 05 14:53:16 2026 HB" },
+  "device": { "name": "/dev/sda", "info_name": "/dev/sda [SAT]", "type": "sat", "protocol": "ATA" },
+  "model_name": "Generic SATA SSD 128GB",
+  "serial_number": "SANITIZED-SSD-0002",
+  "firmware_version": "V1.0",
+  "rotation_rate": 0,
+  "smart_support": { "available": true, "enabled": true },
+  "smart_status": { "passed": true },
+  "ata_smart_attributes": {
+    "revision": 1,
+    "table": [
+      { "id": 9, "name": "Power_On_Hours", "value": 100, "worst": 100, "thresh": 0, "when_failed": "", "flags": { "value": 50, "string": "-O--CK ", "prefailure": false, "updated_online": true, "performance": false, "error_rate": false, "event_count": true, "auto_keep": true }, "raw": { "value": 8000, "string": "8000" } },
+      { "id": 12, "name": "Power_Cycle_Count", "value": 100, "worst": 100, "thresh": 0, "when_failed": "", "flags": { "value": 50, "string": "-O--CK ", "prefailure": false, "updated_online": true, "performance": false, "error_rate": false, "event_count": true, "auto_keep": true }, "raw": { "value": 340, "string": "340" } },
+      { "id": 194, "name": "Temperature_Celsius", "value": 31, "worst": 31, "thresh": 0, "when_failed": "", "flags": { "value": 34, "string": "-O---K ", "prefailure": false, "updated_online": true, "performance": false, "error_rate": false, "event_count": false, "auto_keep": true }, "raw": { "value": 31, "string": "31" } },
+      { "id": 241, "name": "Total_LBAs_Written", "value": 100, "worst": 100, "thresh": 0, "when_failed": "", "flags": { "value": 50, "string": "-O--CK ", "prefailure": false, "updated_online": true, "performance": false, "error_rate": false, "event_count": true, "auto_keep": true }, "raw": { "value": 4200000, "string": "4200000" } }
+    ]
+  },
+  "power_on_time": { "hours": 8000 },
+  "temperature": { "current": 31 }
+}

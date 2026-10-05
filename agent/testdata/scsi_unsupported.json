@@ -1,0 +1,18 @@
+{
+  "json_format_version": [1, 0],
+  "smartctl": {
+    "version": [7, 5], "pre_release": false, "svn_revision": "5714",
+    "platform_info": "x86_64-w64-mingw32-w11-b26200", "build_info": "(AppVeyor)",
+    "argv": ["smartctl", "-a", "-j", "-d", "scsi", "/dev/sda"],
+    "exit_status": 0
+  },
+  "device": { "name": "/dev/sda", "info_name": "/dev/sda", "type": "scsi", "protocol": "SCSI" },
+  "vendor": "VMware",
+  "product": "Virtual disk",
+  "model_name": "VMware Virtual disk",
+  "revision": "1.0",
+  "user_capacity": { "blocks": 83886080, "bytes": 42949672960 },
+  "logical_block_size": 512,
+  "smart_status": { "passed": true },
+  "temperature": { "current": 0, "drive_trip": 0 }
+}
