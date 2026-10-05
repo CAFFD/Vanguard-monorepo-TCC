@@ -1,40 +1,38 @@
-﻿import * as z from "zod";
+import * as z from "zod";
+
+const metric = <T extends z.ZodType>(s: T) => s.nullish();
 
 export const telemetrySchema = z.object({
-  hostname: z
-    .string()
-    .min(1, "hostname ├® obrigat├│rio"),
+  schema_version: z.number().int().optional(),
+  hostname: z.string().min(1, "hostname é obrigatório"),
+  agent_version: z.string().optional(),
 
-  disk_usage: z
-    .number()
-    .min(0, "disk_usage n├úo pode ser menor que 0")
-    .max(100, "disk_usage n├úo pode ser maior que 100"),
+  collection_status: z.enum(['ok', 'partial', 'failed']).optional(),
+  collection_error: z.object({ code: z.string(), message: z.string() }).nullish(),
 
-  smart_5: z
-    .number()
-    .int()
-    .nonnegative(),
+  protocol: z.string().optional(),
+  media_type: z.string().optional(),
+  device_model: z.string().nullish(),
+  device_serial: z.string().nullish(),
 
-  smart_187: z
-    .number()
-    .int()
-    .nonnegative(),
+  disk_usage_percent: metric(z.number().min(0).max(100)),
+  disk_usage: metric(z.number().min(0).max(100)), // legacy
 
-  smart_188: z
-    .number()
-    .int()
-    .nonnegative(),
+  temperature_c: metric(z.number().int()),
+  power_on_hours: metric(z.number().int().nonnegative()),
+  life_remaining_pct: metric(z.number().int().min(0).max(100)),
+  media_errors: metric(z.number().int().nonnegative()),
+  critical_warnings: metric(z.number().int().nonnegative()),
+  smart_passed: metric(z.boolean()),
 
-  smart_197: z
-    .number()
-    .int()
-    .nonnegative(),
+  raw_payload: z.record(z.string(), z.unknown()).optional(),
 
-  smart_198: z
-    .number()
-    .int()
-    .nonnegative(),
+  // Legacy fields
+  smart_5: metric(z.number().int().nonnegative()),
+  smart_187: metric(z.number().int().nonnegative()),
+  smart_188: metric(z.number().int().nonnegative()),
+  smart_197: metric(z.number().int().nonnegative()),
+  smart_198: metric(z.number().int().nonnegative()),
 });
 
-export type TelemetryInput =
-  z.infer<typeof telemetrySchema>;
+export type TelemetryInput = z.infer<typeof telemetrySchema>;

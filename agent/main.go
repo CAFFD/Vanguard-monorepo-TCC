@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,8 +19,6 @@ import (
 // CONFIGURAÇÃO
 // --------------------------------------------------
 
-// apiURL lê a URL base da API da variável de ambiente VANGUARD_API_URL.
-// Se não estiver definida, usa o valor padrão de produção.
 func apiURL() string {
 	if url := os.Getenv("VANGUARD_API_URL"); url != "" {
 		return url
@@ -26,8 +26,6 @@ func apiURL() string {
 	return "https://vanguard-monorepo-tcc.vercel.app"
 }
 
-// smartctlPath localiza o binário smartctl no PATH do sistema.
-// Elimina o caminho hardcoded — funciona em qualquer máquina com smartmontools instalado.
 func smartctlPath() (string, error) {
 	path, err := exec.LookPath("smartctl")
 	if err != nil {
@@ -37,96 +35,54 @@ func smartctlPath() (string, error) {
 }
 
 // --------------------------------------------------
-// STRUCTS — S.M.A.R.T.
+// STRUCTS
 // --------------------------------------------------
 
-// ScannedDevice representa uma entrada do `smartctl --scan-open -j`
 type ScannedDevice struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Protocol string `json:"protocol"`
 }
 
-type SmartAttribute struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Raw  struct {
-		Value int64 `json:"value"`
-	} `json:"raw"`
+type TelemetryError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
-
-type SmartData struct {
-	ModelName    string `json:"model_name"`
-	SerialNumber string `json:"serial_number"`
-
-	SmartStatus struct {
-		Passed bool `json:"passed"`
-	} `json:"smart_status"`
-
-	Temperature struct {
-		Current int `json:"current"`
-	} `json:"temperature"`
-
-	PowerOnTime struct {
-		Hours int64 `json:"hours"`
-	} `json:"power_on_time"`
-
-	Device struct {
-		Name string `json:"name"`
-		Type string `json:"type"`
-	} `json:"device"`
-
-	AtaSmartAttributes struct {
-		Table []SmartAttribute `json:"table"`
-	} `json:"ata_smart_attributes"`
-}
-
-// --------------------------------------------------
-// STRUCT — PAYLOAD ENVIADO À API
-// --------------------------------------------------
 
 type Telemetry struct {
-	Hostname  string `json:"hostname"`
-	DiskUsage int    `json:"disk_usage"`
+	SchemaVersion int    `json:"schema_version"`
+	Hostname      string `json:"hostname"`
+	AgentVersion  string `json:"agent_version,omitempty"`
 
-	// Atributos S.M.A.R.T. exigidos pelo backend
-	Smart5   int64 `json:"smart_5"`
-	Smart187 int64 `json:"smart_187"`
-	Smart188 int64 `json:"smart_188"`
-	Smart197 int64 `json:"smart_197"`
-	Smart198 int64 `json:"smart_198"`
+	CollectionStatus string          `json:"collection_status"`
+	CollectionError  *TelemetryError `json:"collection_error,omitempty"`
 
-	// Dump bruto salvo em raw_payload no banco (auditoria)
-	RawPayload interface{} `json:"raw_payload"`
-}
+	Protocol     string  `json:"protocol,omitempty"`
+	MediaType    string  `json:"media_type,omitempty"`
+	DeviceModel  *string `json:"device_model,omitempty"`
+	DeviceSerial *string `json:"device_serial,omitempty"`
 
-// --------------------------------------------------
-// HELPERS
-// --------------------------------------------------
+	DiskUsagePercent *int   `json:"disk_usage_percent,omitempty"`
+	TemperatureC     *int   `json:"temperature_c,omitempty"`
+	PowerOnHours     *int64 `json:"power_on_hours,omitempty"`
+	LifeRemainingPct *int   `json:"life_remaining_pct,omitempty"`
+	MediaErrors      *int64 `json:"media_errors,omitempty"`
+	CriticalWarnings *int   `json:"critical_warnings,omitempty"`
+	SmartPassed      *bool  `json:"smart_passed,omitempty"`
 
-func buscarSmart(dados SmartData, id int) int64 {
-	for _, atributo := range dados.AtaSmartAttributes.Table {
-		if atributo.ID == id {
-			return atributo.Raw.Value
-		}
-	}
-	return 0
+	RawPayload map[string]interface{} `json:"raw_payload,omitempty"`
 }
 
 // --------------------------------------------------
 // DESCOBERTA DINÂMICA DE DISCO
 // --------------------------------------------------
 
-// descobrirDisco executa `smartctl --scan-open -j` e retorna o nome
-// do primeiro dispositivo encontrado (ex: "/dev/sda", "/dev/nvme0").
-// Funciona com SATA, NVMe, SCSI e Windows sem qualquer if runtime.GOOS.
-func descobrirDisco() (string, error) {
+func descobrirDisco() (ScannedDevice, error) {
 	binario, err := smartctlPath()
 	if err != nil {
-		return "", err
+		return ScannedDevice{}, err
 	}
 
-	// exit code não-zero é esperado aqui — ignoramos, confiamos no JSON
 	cmd := exec.Command(binario, "--scan-open", "-j")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, _ := cmd.CombinedOutput()
@@ -136,45 +92,70 @@ func descobrirDisco() (string, error) {
 	}
 
 	if err := json.Unmarshal(output, &scanOutput); err != nil {
-		return "", fmt.Errorf("falha ao parsear output do --scan-open: %w (output: %s)", err, string(output))
+		return ScannedDevice{}, fmt.Errorf("falha ao parsear output do --scan-open: %w (output: %s)", err, string(output))
 	}
 
 	if len(scanOutput.Devices) == 0 {
-		return "", fmt.Errorf("nenhum disco detectado pelo smartctl --scan-open")
+		return ScannedDevice{}, fmt.Errorf("nenhum disco detectado pelo smartctl --scan-open")
 	}
 
-	disco := scanOutput.Devices[0].Name
-	fmt.Printf("[INFO] Disco detectado: %s (tipo: %s)\n", disco, scanOutput.Devices[0].Type)
-	return disco, nil
+	dev := scanOutput.Devices[0]
+	fmt.Printf("[INFO] Disco detectado: %s (tipo: %s)\n", dev.Name, dev.Type)
+	return dev, nil
 }
 
 // --------------------------------------------------
 // COLETA — S.M.A.R.T.
 // --------------------------------------------------
 
-// coletarSmart recebe o dispositivo descoberto dinamicamente por descobrirDisco().
-func coletarSmart(device string) (SmartData, error) {
+func coletarSmart(dev ScannedDevice) (ParsedSmart, *TelemetryError) {
 	binario, err := smartctlPath()
 	if err != nil {
-		return SmartData{}, err
+		return ParsedSmart{}, &TelemetryError{Code: "SMARTCTL_NOT_FOUND", Message: err.Error()}
 	}
 
-	cmd := exec.Command(binario, "-a", "-j", device)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, binario, "-a", "-j", "-d", dev.Type, dev.Name)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, err := cmd.CombinedOutput()
 
-	// smartctl usa exit codes não-zero mesmo em leitura parcial bem-sucedida.
-	// Confiamos no parse do JSON, não no exit code.
-	var dados SmartData
-	if parseErr := json.Unmarshal(output, &dados); parseErr != nil {
-		return SmartData{}, fmt.Errorf("falha ao parsear JSON do smartctl para %s: %w", device, parseErr)
+	if ctx.Err() == context.DeadlineExceeded {
+		return ParsedSmart{}, &TelemetryError{Code: "TIMEOUT", Message: "smartctl travou (timeout de 60s)"}
 	}
 
+	var root map[string]interface{}
+	if parseErr := json.Unmarshal(output, &root); parseErr != nil {
+		return ParsedSmart{}, &TelemetryError{Code: "JSON_PARSE_ERROR", Message: parseErr.Error()}
+	}
+
+	if smartctl, ok := root["smartctl"].(map[string]interface{}); ok {
+		if exitF, ok := smartctl["exit_status"].(float64); ok {
+			exitCode := int(exitF)
+			if (exitCode & 1) != 0 {
+				return ParsedSmart{}, &TelemetryError{Code: "CMD_LINE_PARSE_ERROR", Message: "smartctl command line failed"}
+			}
+			if (exitCode & 2) != 0 {
+				msg := "Device open failed or permission denied"
+				if msgs, ok := smartctl["messages"].([]interface{}); ok && len(msgs) > 0 {
+					if m, ok := msgs[0].(map[string]interface{}); ok {
+						if s, ok := m["string"].(string); ok {
+							msg = s
+						}
+					}
+				}
+				return ParsedSmart{}, &TelemetryError{Code: "PERMISSION_DENIED", Message: msg}
+			}
+		}
+	}
+
+	parsed, err := parseSmart(output)
 	if err != nil {
-		fmt.Printf("[WARN] smartctl saiu com código de erro para %s, mas JSON parseado: %v\n", device, err)
+		return ParsedSmart{}, &TelemetryError{Code: "JSON_PARSE_ERROR", Message: err.Error()}
 	}
 
-	return dados, nil
+	return parsed, nil
 }
 
 // --------------------------------------------------
@@ -210,27 +191,37 @@ func enviarTelemetria(telemetria Telemetry) error {
 	}
 
 	url := apiURL() + "/telemetry"
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("falha ao criar request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Timeout generoso para cold start de funções serverless (Vercel)
 	client := http.Client{Timeout: 30 * time.Second}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("falha na requisição HTTP: %w", err)
-	}
-	defer resp.Body.Close()
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("falha ao criar request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("API retornou status %d para %s", resp.StatusCode, url)
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("falha na requisição HTTP: %w", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("API retornou status %d para %s: %s", resp.StatusCode, url, string(body))
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		fmt.Printf("[OK] Telemetria enviada → %s (%s) [Status: %s]\n", url, resp.Status, telemetria.CollectionStatus)
+		return nil
 	}
 
-	fmt.Printf("[OK] Telemetria enviada → %s (%s)\n", url, resp.Status)
-	return nil
+	return lastErr
 }
 
 // --------------------------------------------------
@@ -240,34 +231,63 @@ func enviarTelemetria(telemetria Telemetry) error {
 func executarCiclo(hostname string) {
 	fmt.Println("[INFO] Iniciando ciclo de coleta...")
 
-	// Descoberta dinâmica: detecta SATA, NVMe, SCSI automaticamente
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("[FATAL] Panic no ciclo: %v\n", r)
+			telemetria := Telemetry{
+				SchemaVersion:    2,
+				AgentVersion:     "2.0.0",
+				Hostname:         hostname,
+				CollectionStatus: "failed",
+				CollectionError:  &TelemetryError{Code: "INTERNAL_PANIC", Message: fmt.Sprintf("%v", r)},
+			}
+			enviarTelemetria(telemetria)
+		}
+	}()
+
+	telemetria := Telemetry{
+		SchemaVersion:    2,
+		AgentVersion:     "2.0.0",
+		Hostname:         hostname,
+		CollectionStatus: "failed",
+	}
+
 	device, err := descobrirDisco()
 	if err != nil {
-		fmt.Printf("[ERRO] Descoberta de disco: %v — ciclo abortado\n", err)
+		fmt.Printf("[ERRO] Descoberta de disco: %v\n", err)
+		telemetria.CollectionError = &TelemetryError{Code: "NO_DEVICE", Message: err.Error()}
+		enviarTelemetria(telemetria)
 		return
 	}
 
-	dados, err := coletarSmart(device)
-	if err != nil {
-		fmt.Printf("[ERRO] Coleta SMART (%s): %v — ciclo abortado\n", device, err)
+	parsed, telErr := coletarSmart(device)
+	if telErr != nil {
+		fmt.Printf("[ERRO] Coleta SMART (%s): code=%s message=%s\n", device.Name, telErr.Code, telErr.Message)
+		telemetria.CollectionError = telErr
+		enviarTelemetria(telemetria)
 		return
 	}
+
+	telemetria.Protocol = parsed.Metrics.Protocol
+	telemetria.MediaType = parsed.Metrics.MediaType
+	telemetria.DeviceModel = parsed.Metrics.DeviceModel
+	telemetria.DeviceSerial = parsed.Metrics.DeviceSerial
+	telemetria.TemperatureC = parsed.Metrics.TemperatureC
+	telemetria.PowerOnHours = parsed.Metrics.PowerOnHours
+	telemetria.LifeRemainingPct = parsed.Metrics.LifeRemainingPct
+	telemetria.MediaErrors = parsed.Metrics.MediaErrors
+	telemetria.CriticalWarnings = parsed.Metrics.CriticalWarnings
+	telemetria.SmartPassed = parsed.Metrics.SmartPassed
+	telemetria.RawPayload = parsed.RawPayload
 
 	diskUsage, err := obterUsoDisco()
 	if err != nil {
-		fmt.Printf("[ERRO] Uso do disco: %v — ciclo abortado\n", err)
-		return
-	}
-
-	telemetria := Telemetry{
-		Hostname:   hostname,
-		DiskUsage:  diskUsage,
-		Smart5:     buscarSmart(dados, 5),
-		Smart187:   buscarSmart(dados, 187),
-		Smart188:   buscarSmart(dados, 188),
-		Smart197:   buscarSmart(dados, 197),
-		Smart198:   buscarSmart(dados, 198),
-		RawPayload: dados,
+		fmt.Printf("[ERRO] Uso do disco: %v\n", err)
+		telemetria.CollectionStatus = "partial"
+		telemetria.CollectionError = &TelemetryError{Code: "DISK_USAGE_FAILED", Message: err.Error()}
+	} else {
+		telemetria.DiskUsagePercent = &diskUsage
+		telemetria.CollectionStatus = "ok"
 	}
 
 	if err := enviarTelemetria(telemetria); err != nil {
@@ -307,10 +327,8 @@ func main() {
 
 	fmt.Printf("[INFO] Agente Vanguard iniciado | hostname=%s | api=%s\n", hostname, apiURL())
 
-	// Executa imediatamente no boot sem esperar o primeiro tick
 	executarCiclo(hostname)
 
-	// Loop periódico a cada 5 minutos — sem vazamento de memória
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
@@ -318,4 +336,3 @@ func main() {
 		executarCiclo(hostname)
 	}
 }
-

@@ -1,0 +1,1 @@
+{"json_format_version":[1,0],"smartctl":{"version":[7,5],"pre_release":false,"argv":["smartctl","-a","-j"

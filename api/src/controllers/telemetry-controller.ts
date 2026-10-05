@@ -1,4 +1,4 @@
-﻿import { randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
@@ -55,23 +55,45 @@ export async function createTelemetry(
 
     const equipment = matchingEquipments[0]!;
 
+    const isLegacy = !telemetry.schema_version;
+    const finalStatus = isLegacy ? 'legacy' : (telemetry.collection_status || 'legacy');
+
+    const diskUsageVal = telemetry.disk_usage_percent ?? telemetry.disk_usage;
+
     await db.insert(telemetryHistory).values({
         id: randomUUID(),
         created_at: new Date(),
-        disk_usage_percent: String(telemetry.disk_usage),
-        smart_5: telemetry.smart_5,
         equipment_id: equipment.id,
-        smart_187: telemetry.smart_187,
-        smart_188: telemetry.smart_188,
-        smart_197: telemetry.smart_197,
-        smart_198: telemetry.smart_198,
-        raw_payload: telemetry,
+        
+        schema_version: telemetry.schema_version ?? null,
+        collection_status: finalStatus,
+        collection_error: telemetry.collection_error ?? null,
+
+        protocol: telemetry.protocol ?? null,
+        media_type: telemetry.media_type ?? null,
+        device_model: telemetry.device_model ?? null,
+        device_serial: telemetry.device_serial ?? null,
+
+        disk_usage_percent: diskUsageVal != null ? String(diskUsageVal) : null,
+        temperature_c: telemetry.temperature_c ?? null,
+        power_on_hours: telemetry.power_on_hours ?? null,
+        life_remaining_pct: telemetry.life_remaining_pct ?? null,
+        media_errors: telemetry.media_errors ?? null,
+        critical_warnings: telemetry.critical_warnings ?? null,
+        smart_passed: telemetry.smart_passed ?? null,
+        
+        raw_payload: telemetry.raw_payload ?? telemetry,
+
+        // Legado
+        smart_5: telemetry.smart_5 ?? null,
+        smart_187: telemetry.smart_187 ?? null,
+        smart_188: telemetry.smart_188 ?? null,
+        smart_197: telemetry.smart_197 ?? null,
+        smart_198: telemetry.smart_198 ?? null,
     });
 
     console.log(
-        "Telemetria persistida para equipamento:",
-        equipment.id,
-        telemetry
+        `[TELEMETRY V2] Gravado equipamento ${equipment.id} | Host: ${telemetry.hostname} | Status: ${finalStatus} | Protocol: ${telemetry.protocol || 'N/A'}`
     );
 
     return reply.status(200).send({
