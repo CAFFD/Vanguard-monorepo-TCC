@@ -6,6 +6,7 @@ import {
     createEquipmentSchema,
     updateEquipmentSchema,
 } from "../schemas/equipment-schemas.js";
+import { classifyHealth } from "../lib/health-classifier.js";
 
 interface UpdateEquipmentParams {
     id: string;
@@ -67,36 +68,12 @@ export async function getEquipments(
                 .orderBy(desc(telemetryHistory.created_at))
                 .limit(2);
                 
-            let liveStatus = "NORMAL";
-            const latest = recentTelemetries[0];
-            
-            if (!latest || !latest.created_at) {
-                liveStatus = "OFFLINE";
-            } else {
-                const telemetryTime = new Date(latest.created_at).getTime();
-                if (now - telemetryTime > TWO_HOURS_IN_MS) {
-                    liveStatus = "OFFLINE";
-                } else {
-                    const previous = recentTelemetries[1];
-                    if (
-                        previous &&
-                        (latest.smart_197 ?? 0) > (previous.smart_197 ?? 0) &&
-                        (latest.smart_198 ?? 0) > (previous.smart_198 ?? 0)
-                    ) {
-                        liveStatus = "CRÍTICO";
-                    } else {
-                        const diskUsage = Number(latest.disk_usage_percent);
-                        const smart197 = latest.smart_197 ?? 0;
-                        if (diskUsage > 90 || smart197 > 0) {
-                            liveStatus = "ATENÇÃO";
-                        }
-                    }
-                }
-            }
+            const { status: liveStatus, reasons } = classifyHealth(recentTelemetries[0], recentTelemetries[1], now);
             
             return {
                 ...eqData,
-                health_status: liveStatus
+                health_status: liveStatus,
+                health_reasons: reasons
             };
         })
     );
@@ -123,33 +100,12 @@ export async function getEquipmentById(
         .orderBy(desc(telemetryHistory.created_at))
         .limit(2);
         
-    let liveStatus = "NORMAL";
-    const latest = recentTelemetries[0];
-    
-    if (!latest || !latest.created_at) {
-        liveStatus = "OFFLINE";
-    } else {
-        const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
-        const telemetryTime = new Date(latest.created_at).getTime();
-        if (Date.now() - telemetryTime > TWO_HOURS_IN_MS) {
-            liveStatus = "OFFLINE";
-        } else {
-            const previous = recentTelemetries[1];
-            if (previous && (latest.smart_197 ?? 0) > (previous.smart_197 ?? 0) && (latest.smart_198 ?? 0) > (previous.smart_198 ?? 0)) {
-                liveStatus = "CRÍTICO";
-            } else {
-                const diskUsage = Number(latest.disk_usage_percent);
-                const smart197 = latest.smart_197 ?? 0;
-                if (diskUsage > 90 || smart197 > 0) {
-                    liveStatus = "ATENÇÃO";
-                }
-            }
-        }
-    }
+    const { status: liveStatus, reasons } = classifyHealth(recentTelemetries[0], recentTelemetries[1]);
     
     return reply.status(200).send({
         ...eqData,
-        health_status: liveStatus
+        health_status: liveStatus,
+        health_reasons: reasons
     });
 }
 
