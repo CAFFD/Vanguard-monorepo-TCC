@@ -1,6 +1,6 @@
-# Manual de Instalação do Agente Vanguard
+# Manual de Instalação Automática do Agente Vanguard
 
-Este é um guia passo a passo, feito para que qualquer pessoa consiga configurar um novo computador para ser monitorado pelo sistema Vanguard. Siga as instruções na ordem abaixo.
+Este é um guia passo a passo, feito para que qualquer pessoa consiga configurar um novo computador para ser monitorado pelo sistema Vanguard de forma rápida e silenciosa.
 
 ---
 
@@ -26,36 +26,39 @@ O sistema precisa saber exatamente o nome da máquina para vinculá-la aos dados
 
 ---
 
-## 💾 Passo 3: Instalar o leitor de Disco
-O agente precisa de um pequeno programa gratuito para conseguir ler a saúde do HD/SSD.
+## 💾 Passo 3: Instalar o leitor de Disco (Pré-requisito)
+O agente precisa de um pequeno programa gratuito para conseguir ler a saúde do HD/SSD/NVMe na camada de hardware.
 
 1. No computador novo, abra o navegador e acesse este link direto para baixar o programa:
    👉 **[Clique aqui para baixar o Smartmontools](https://sourceforge.net/projects/smartmontools/files/smartmontools/7.5/smartmontools-7.5-1.win32-setup.exe/download)**
 2. Espere os 5 segundos do site e o download do arquivo `smartmontools-7.5-1.win32-setup.exe` vai começar.
 3. Abra esse arquivo baixado.
-4. Vá clicando em **Next (Avançar)** em todas as telas, marque a caixa **"Add smartmontools to system PATH"** (se aparecer), e clique em **Install**.
+4. Vá clicando em **Next (Avançar)** em todas as telas, marque a caixa **"Add smartmontools to system PATH"** (isso é muito importante), e clique em **Install**.
 5. Quando terminar, clique em **Finish**.
 
 ---
 
-## 🤖 Passo 4: Colocar o Agente no Computador
-1. Pegue o arquivo `vanguard-agent.exe` (pelo pendrive ou baixando do seu drive) e passe para o computador novo.
-2. Abra o disco **C:** do computador, entre na pasta **Arquivos de Programas** (ou Program Files).
-3. Crie uma pasta lá dentro chamada **Vanguard** e jogue o arquivo `vanguard-agent.exe` dentro dela.
-   - O caminho final tem que ficar exatamente assim: `C:\Program Files\Vanguard\vanguard-agent.exe`
+## 🚀 Passo 4: Instalação Automatizada do Agente
+Graças ao novo script de instalação corporativa, colocar o agente para rodar invisível no plano de fundo é questão de dois cliques.
+
+1. Insira o pendrive (ou acesse a pasta da rede) que contém os dois arquivos do Agente Vanguard:
+   - `vanguard-agent.exe`
+   - `install.ps1`
+2. Copie essa pasta para a **Área de Trabalho** do computador (ou qualquer lugar de fácil acesso).
+3. Entre na pasta copiada.
+4. Clique com o **botão direito do mouse** sobre o arquivo **`install.ps1`** e selecione **Executar com o PowerShell**.
+5. Se o Windows perguntar se você deseja permitir que o aplicativo faça alterações (UAC), clique em **Sim**.
+6. Uma tela azul ou preta abrirá rapidamente executando a instalação.
+   - O script vai copiar o agente automaticamente para uma pasta oculta no disco `C:\Vanguard` e programar o Windows para iniciá-lo invisível sempre que a máquina for ligada (com privilégios SYSTEM).
+   - Se você vir as mensagens em verde dizendo `[OK]`, a instalação foi um sucesso!
 
 ---
 
-## 🚀 Passo 5: Fazer o agente rodar invisível e para sempre
-Agora vamos dizer para o Windows ligar o agente sozinho, de forma invisível, toda vez que o PC ligar.
+## ✅ Passo 5: Validação Final
+Não é necessário reiniciar o computador. O script `install.ps1` já liga o Agente na hora para enviar o primeiro pacote de dados!
 
-1. Ainda naquela tela azul do **PowerShell como Administrador** (ou abra uma nova se fechou), copie *todo o bloco de texto abaixo* (junto), cole na tela e aperte **Enter**:
+1. Para ter certeza de que está funcionando, aperte `Ctrl + Shift + Esc` para abrir o **Gerenciador de Tarefas**.
+2. Vá até a aba **Detalhes**.
+3. Procure por `vanguard-agent.exe` na lista. Se ele estiver lá consumindo quase 0% de CPU, **parabéns!** O computador já está enviando telemetria a cada 5 minutos para o seu painel na nuvem.
 
-```powershell
-cmd.exe /c 'schtasks /create /tn "VanguardAgent" /tr "\"C:\Program Files\Vanguard\vanguard-agent.exe\"" /sc onstart /ru SYSTEM /rl HIGHEST /F'
-```
-
-2. Se ele responder **"Êxito: a tarefa agendada foi criada"**, **deu tudo certo!**
-3. Reinicie o computador.
-
-**🎉 Fim!** Assim que o PC ligar, o agente já vai começar a trabalhar invisível e enviar os dados do HD a cada 5 minutos lá para o painel da sua plataforma Web.
+**🎉 Fim! Pode fechar tudo e ir para a próxima máquina.**

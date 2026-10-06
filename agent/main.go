@@ -28,10 +28,17 @@ func apiURL() string {
 
 func smartctlPath() (string, error) {
 	path, err := exec.LookPath("smartctl")
-	if err != nil {
-		return "", fmt.Errorf("smartctl não encontrado no PATH: %w", err)
+	if err == nil {
+		return path, nil
 	}
-	return path, nil
+
+	// Fallback corporativo: Caso a Tarefa Agendada (SYSTEM) não tenha pego a variável PATH atualizada
+	fallback := `C:\Program Files\smartmontools\bin\smartctl.exe`
+	if _, errStat := os.Stat(fallback); errStat == nil {
+		return fallback, nil
+	}
+
+	return "", fmt.Errorf("smartctl não encontrado no PATH nem em %s: %w", fallback, err)
 }
 
 // --------------------------------------------------
