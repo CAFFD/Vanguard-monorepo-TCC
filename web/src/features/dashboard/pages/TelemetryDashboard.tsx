@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../../../lib/api';
 import { useToast } from '../../../components/feedback/ToastContext';
+import { HealthBadge } from '../../equipments/components/HealthBadge';
+import { isAtRisk } from '../../equipments/lib/health';
 
 interface TelemetryStatus {
   normal: number;
   atencao: number;
   critico: number;
   offline: number;
+  sem_leitura: number;
 }
 
 interface Equipment {
@@ -17,13 +20,14 @@ interface Equipment {
   mac_address: string;
   sector_id: string;
   health_status: string;
+  health_reasons?: string[];
 }
 
 export const TelemetryDashboard: React.FC = () => {
   const { showToast } = useToast();
   
   const [statusCounts, setStatusCounts] = useState<TelemetryStatus>({
-    normal: 0, atencao: 0, critico: 0, offline: 0
+    normal: 0, atencao: 0, critico: 0, offline: 0, sem_leitura: 0
   });
   const [riskEquipments, setRiskEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,9 +52,7 @@ export const TelemetryDashboard: React.FC = () => {
         if (isMounted) {
           setStatusCounts(statusData);
           
-          const atRisk = equipmentsData.filter(
-            (eq) => eq.health_status === 'CRÍTICO' || eq.health_status === 'ATENÇÃO' || eq.health_status === 'OFFLINE'
-          );
+          const atRisk = equipmentsData.filter((eq) => isAtRisk(eq.health_status));
           
           setRiskEquipments(atRisk);
           setLastUpdate(new Date());
@@ -77,8 +79,8 @@ export const TelemetryDashboard: React.FC = () => {
     return (
       <div className="w-full">
         <div className="h-6 w-48 bg-zinc-800 rounded-md mb-8"></div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-10">
+          {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="h-24 bg-zinc-900 border border-white/5 rounded-md"></div>
           ))}
         </div>
@@ -102,7 +104,7 @@ export const TelemetryDashboard: React.FC = () => {
       </div>
 
       {/* Métricas Técnicas (Grid Vercel-style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
         
         <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40 hover:bg-zinc-900 transition-colors">
           <div className="flex items-center gap-2 mb-3">
@@ -136,6 +138,14 @@ export const TelemetryDashboard: React.FC = () => {
           <div className="text-3xl font-mono text-zinc-100 tracking-tighter">{statusCounts.offline}</div>
         </div>
 
+        <div className="p-4 rounded-md border border-dashed border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-violet-400"></div>
+            <span className="text-xs font-medium text-violet-300/80 uppercase tracking-widest">Sem Leitura</span>
+          </div>
+          <div className="text-3xl font-mono text-zinc-100 tracking-tighter">{statusCounts.sem_leitura ?? 0}</div>
+        </div>
+
       </div>
 
       {/* Fila de Triagem Densa */}
@@ -157,6 +167,7 @@ export const TelemetryDashboard: React.FC = () => {
                   <th className="px-4 py-2 font-medium">Equipamento</th>
                   <th className="px-4 py-2 font-medium">MAC Address</th>
                   <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium">Motivo</th>
                   <th className="px-4 py-2 text-right font-medium">Ação</th>
                 </tr>
               </thead>
@@ -171,15 +182,15 @@ export const TelemetryDashboard: React.FC = () => {
                       {eq.mac_address}
                     </td>
                     <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          eq.health_status === 'CRÍTICO' ? 'bg-red-500' : 
-                          eq.health_status === 'ATENÇÃO' ? 'bg-amber-500' : 'bg-zinc-500'
-                        }`} />
-                        <span className="text-xs font-mono text-zinc-300">
-                          {eq.health_status}
-                        </span>
-                      </div>
+                      <HealthBadge status={eq.health_status} reasons={eq.health_reasons} />
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-zinc-500 max-w-xs">
+                      <span className="block truncate" title={eq.health_reasons?.[0]}>
+                        {eq.health_reasons?.[0] ?? '—'}
+                      </span>
+                      {eq.health_reasons && eq.health_reasons.length > 1 && (
+                        <span className="text-[10px] font-mono text-zinc-600">+{eq.health_reasons.length - 1} motivo(s)</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <Link 

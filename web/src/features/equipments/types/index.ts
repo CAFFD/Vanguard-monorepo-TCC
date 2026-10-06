@@ -2,6 +2,8 @@ export type HealthStatus =
   | "NORMAL"
   | "ATENCAO"
   | "CRITICO"
+  | "OFFLINE"
+  | "SEM_LEITURA"
   | "SEM_COMUNICACAO"
   | "INATIVO";
 
@@ -12,4 +14,5 @@ export interface Equipment {
   patrimonyTag: string;
   hostname: string;
   healthStatus: HealthStatus;
+  healthReasons?: string[];
 }

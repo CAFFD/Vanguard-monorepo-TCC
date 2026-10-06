@@ -54,7 +54,18 @@ $Trigger = New-ScheduledTaskTrigger -AtStartup
 # Roda como usuário SYSTEM para não piscar tela preta e ter permissão admin silenciosa
 $Principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
-Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Description "Coleta de telemetria de saúde de discos SSD/NVMe/HDD do Parque Tecnológico" | Out-Null
+# Configuracoes de resiliencia (notebooks): nao encerrar na bateria, sem limite de tempo,
+# reiniciar se o processo morrer e iniciar assim que possivel se perdeu o gatilho.
+$Settings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable `
+    -ExecutionTimeLimit ([TimeSpan]::Zero) `
+    -RestartCount 999 `
+    -RestartInterval (New-TimeSpan -Minutes 1) `
+    -MultipleInstances IgnoreNew
+
+Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings -Description "Coleta de telemetria de saúde de discos SSD/NVMe/HDD do Parque Tecnológico" | Out-Null
 
 Write-Host "[OK] Tarefa agendada configurada para iniciar junto com o Windows!" -ForegroundColor Green
 

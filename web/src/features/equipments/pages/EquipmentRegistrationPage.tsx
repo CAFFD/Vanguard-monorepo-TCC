@@ -68,7 +68,7 @@ export const EquipmentRegistrationPage: React.FC = () => {
         mac_address: data.macAddress,
         patrimony_tag: data.patrimonyTag,
         hostname: data.hostname,
-        health_status: 'NORMAL'
+        health_status: 'SEM_LEITURA'
       };
 
       const response = await apiFetch('/equipments', {

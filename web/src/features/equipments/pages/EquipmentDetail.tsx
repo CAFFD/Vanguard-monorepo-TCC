@@ -7,6 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { occurrenceSchema } from '../../occurrences/schemas/occurrenceSchema';
 import type { OccurrenceFormData } from '../../occurrences/schemas/occurrenceSchema';
 import { Select } from '../../../components/ui/Select';
+import { HealthBadge } from '../components/HealthBadge';
+import { HealthReasons } from '../components/HealthReasons';
 interface Equipment {
   id: string;
   patrimony_tag: string;
@@ -14,6 +16,7 @@ interface Equipment {
   mac_address: string;
   sector_id: string;
   health_status: string;
+  health_reasons?: string[];
 }
 
 interface Occurrence {
@@ -123,16 +126,7 @@ export const EquipmentDetail: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-xl font-medium text-zinc-100">{equipment.hostname}</h2>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 border border-white/10 rounded-full bg-zinc-900/50">
-               <div className={`w-1.5 h-1.5 rounded-full ${
-                  equipment.health_status === 'NORMAL' ? 'bg-emerald-500' : 
-                  equipment.health_status === 'ATENÇÃO' ? 'bg-amber-500' :
-                  equipment.health_status === 'CRÍTICO' ? 'bg-red-500' : 'bg-zinc-500'
-                }`} />
-                <span className="text-[10px] font-mono text-zinc-300 tracking-wider">
-                  {equipment.health_status}
-                </span>
-            </div>
+            <HealthBadge status={equipment.health_status} variant="pill" />
           </div>
           <p className="text-sm text-zinc-500 font-mono">ID: {equipment.id}</p>
         </div>
@@ -159,6 +153,8 @@ export const EquipmentDetail: React.FC = () => {
           <p className="font-mono text-sm text-zinc-200">{equipment.sector_id.slice(0,8)}...</p>
         </div>
       </div>
+
+      <HealthReasons status={equipment.health_status} reasons={equipment.health_reasons} />
 
       <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
         <h3 className="text-sm font-medium text-zinc-100">Log de Ocorrências</h3>
