@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../../../lib/api';
 import { useToast } from '../../../components/feedback/ToastContext';
+import { HealthBadge } from '../components/HealthBadge';
 
 interface Equipment {
   id: string;
@@ -10,6 +11,7 @@ interface Equipment {
   mac_address: string;
   sector_id: string;
   health_status: string;
+  health_reasons?: string[];
 }
 
 interface Sector {
@@ -62,15 +64,23 @@ export const EquipmentListPage: React.FC = () => {
 
   return (
     <div className="w-full pb-12">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/10 pb-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-4">
         <div>
           <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Prontuários</h2>
           <p className="text-sm text-zinc-500 mt-1">
             Gestão e histórico de todos os equipamentos do parque.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 text-xs font-mono text-zinc-500">
-          {equipments.length} registries
+        <div className="flex items-center gap-4">
+          <div className="text-xs font-mono text-zinc-500">
+            {equipments.length} registries
+          </div>
+          <Link
+            to="/equipamentos/cadastrar"
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-black bg-zinc-100 rounded-md hover:bg-zinc-200 transition-colors"
+          >
+            Novo Equipamento
+          </Link>
         </div>
       </div>
 
@@ -110,16 +120,7 @@ export const EquipmentListPage: React.FC = () => {
                       {sectors[equipment.sector_id] || 'Desconhecido'}
                     </td>
                     <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          equipment.health_status === 'NORMAL' ? 'bg-emerald-500' : 
-                          equipment.health_status === 'ATENÇÃO' ? 'bg-amber-500' :
-                          equipment.health_status === 'CRÍTICO' ? 'bg-red-500' : 'bg-zinc-500'
-                        }`} />
-                        <span className="text-xs font-mono text-zinc-300">
-                          {equipment.health_status}
-                        </span>
-                      </div>
+                      <HealthBadge status={equipment.health_status} reasons={equipment.health_reasons} />
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <Link 
