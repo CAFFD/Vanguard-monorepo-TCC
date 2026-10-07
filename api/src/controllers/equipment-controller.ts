@@ -31,22 +31,36 @@ export async function createEquipment(
 
     const { id, sector_id, mac_address, patrimony_tag, hostname, health_status } = result.data;
 
-    const [createdEquipment] = await db
-        .insert(equipments)
-        .values({
-            id,
-            sector_id,
-            mac_address,
-            patrimony_tag,
-            hostname,
-            health_status,
-        })
-        .returning();
+    try {
+        const [createdEquipment] = await db
+            .insert(equipments)
+            .values({
+                id,
+                sector_id,
+                mac_address,
+                patrimony_tag,
+                hostname,
+                health_status,
+            })
+            .returning();
 
-    return reply.status(201).send({
-        success: true,
-        data: createdEquipment,
-    });
+        return reply.status(201).send({
+            success: true,
+            data: createdEquipment,
+        });
+    } catch (error: any) {
+        if (error.code === '23505') {
+            return reply.status(409).send({
+                success: false,
+                message: "Já existe um equipamento cadastrado com este Endereço MAC ou Número de Patrimônio.",
+            });
+        }
+        console.error("Erro ao cadastrar equipamento:", error);
+        return reply.status(500).send({
+            success: false,
+            message: "Erro interno ao cadastrar o equipamento.",
+        });
+    }
 }
 
 export async function getEquipments(

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
@@ -41,6 +43,17 @@ export async function createTelemetry(
         .where(eq(equipments.hostname, telemetry.hostname));
 
     if (matchingEquipments.length === 0) {
+        try {
+            const logPath = path.resolve(process.cwd(), 'unregistered_agents.log');
+            // Formata o log: data/hora, hostname e o schema version para facilitar
+            const logLine = `[${new Date().toISOString()}] HOSTNAME NÃO CADASTRADO: ${telemetry.hostname} | Agente v${telemetry.agent_version}\n`;
+            if (!fs.existsSync(logPath) || !fs.readFileSync(logPath, 'utf8').includes(telemetry.hostname)) {
+                 fs.appendFileSync(logPath, logLine);
+            }
+        } catch(e) {
+            // Ignora erro de arquivo
+        }
+
         return reply.status(404).send({
             success: false,
             message: `Nenhum equipamento encontrado para o hostname: ${telemetry.hostname}`,
