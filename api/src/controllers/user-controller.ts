@@ -1,47 +1,38 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { db } from "../db/index.js";
-import { users } from "../db/schema.js";
-import { createUserSchema } from "../schemas/user-schemas.js";
+import { ConflictError, ForbiddenError, NotFoundError } from "../lib/errors.js";
+import { hashPassword } from "../lib/password.js";
+import { toPublicUser } from "../lib/sanitize.js";
+import { userRepository } from "../repositories/user-repository.js";
+import { createUserSchema, userIdParamsSchema } from "../schemas/user-schemas.js";
 
 /**
- * POST /users
+ * POST /users  (somente GESTOR)
  * Cadastra um novo usuário (Gestor ou Técnico).
- * A senha deve chegar já hasheada pelo frontend — nunca texto puro.
+ * A senha é recebida via HTTPS e armazenada apenas como hash scrypt.
+ * Erros de validação do Zod são capturados pelo setErrorHandler global.
  */
 export async function createUser(
     request: FastifyRequest,
     reply: FastifyReply
 ) {
-    const result = createUserSchema.safeParse(request.body);
+    const { id, name, email, role, password } = createUserSchema.parse(request.body);
 
-    if (!result.success) {
-        return reply.status(400).send({
-            success: false,
-            message: "Dados de usuário inválidos",
-            errors: result.error.issues.map((issue) => ({
-                field: issue.path.join("."),
-                message: issue.message,
-            })),
-        });
+    if (await userRepository.findByEmail(email)) {
+        throw new ConflictError("Já existe um usuário cadastrado com este e-mail.");
     }
 
-    const { id, name, email, role, password_hash } = result.data;
-
-    const [createdUser] = await db
-        .insert(users)
-        .values({ id, name, email, role, password_hash })
-        .returning({
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            role: users.role,
-            // Nunca retornar o hash da senha
-        });
+    const createdUser = await userRepository.create({
+        id: id ?? randomUUID(),
+        name,
+        email,
+        role,
+        password_hash: await hashPassword(password),
+    });
 
     return reply.status(201).send({
         success: true,
-        data: createdUser,
+        data: toPublicUser(createdUser), // Nunca retornar o hash da senha
     });
 }
 
@@ -53,14 +44,29 @@ export async function getUsers(
     _request: FastifyRequest,
     reply: FastifyReply
 ) {
-    const allUsers = await db
-        .select({
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            role: users.role,
-        })
-        .from(users);
+    const allUsers = await userRepository.list();
 
-    return reply.status(200).send(allUsers);
+    return reply.status(200).send(allUsers.map(toPublicUser));
+}
+
+/**
+ * DELETE /users/:id  (somente GESTOR)
+ * Remove um usuário. Um gestor não pode excluir a própria conta.
+ */
+export async function deleteUser(
+    request: FastifyRequest,
+    reply: FastifyReply
+) {
+    const { id } = userIdParamsSchema.parse(request.params);
+
+    if (id === request.user.sub) {
+        throw new ForbiddenError("Você não pode excluir a sua própria conta.");
+    }
+
+    const deleted = await userRepository.deleteById(id);
+    if (!deleted) {
+        throw new NotFoundError("Usuário não encontrado.");
+    }
+
+    return reply.status(200).send({ success: true, data: toPublicUser(deleted) });
 }

@@ -11,14 +11,14 @@ export const HealthReasons: React.FC<HealthReasonsProps> = ({ status, reasons })
   const style = getHealthStyle(status);
 
   return (
-    <div className="rounded-md border border-white/10 bg-zinc-900/40 p-4 mb-8">
-      <h3 className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-3">
+    <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-4 mb-8">
+      <h3 className="text-[10px] text-[var(--color-text-secondary)] font-medium uppercase tracking-widest mb-3">
         Diagnóstico
       </h3>
       <ul className="space-y-2">
         {reasons.map((reason, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm text-zinc-300">
-            <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${style.bullet}`} />
+          <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--color-text-main)]">
+            <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${style.bullet}`} aria-hidden="true" />
             <span>{reason}</span>
           </li>
         ))}

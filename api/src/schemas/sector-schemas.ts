@@ -15,3 +15,7 @@ export const createSectorSchema = z.object({
 });
 
 export type CreateSectorInput = z.infer<typeof createSectorSchema>;
+
+export const sectorIdParamsSchema = z.object({
+  id: z.string().min(1, "id é obrigatório"),
+});

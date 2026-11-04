@@ -19,23 +19,29 @@ export const EquipmentRegistrationPage: React.FC = () => {
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [loadingSectors, setLoadingSectors] = useState(true);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting, isDirty } } = useForm<EquipmentFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting, isDirty },
+  } = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
       patrimonyTag: '',
       hostname: '',
       macAddress: '',
-      sectorId: ''
-    }
+      sectorId: '',
+    },
   });
 
   useEffect(() => {
     let isMounted = true;
     apiFetch('/sectors')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (isMounted) {
-          setSectors(data);
+          setSectors(Array.isArray(data) ? data : []);
           setLoadingSectors(false);
         }
       })
@@ -45,11 +51,13 @@ export const EquipmentRegistrationPage: React.FC = () => {
           setLoadingSectors(false);
         }
       });
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [showToast]);
 
   const handleMacChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^a-fA-F0-9]/g, '');
+    const value = e.target.value.replace(/[^a-fA-F0-9]/g, '');
     let formatted = '';
     for (let i = 0; i < value.length; i++) {
       if (i > 0 && i % 2 === 0 && i < 12) {
@@ -68,20 +76,20 @@ export const EquipmentRegistrationPage: React.FC = () => {
         mac_address: data.macAddress,
         patrimony_tag: data.patrimonyTag,
         hostname: data.hostname,
-        health_status: 'SEM_LEITURA'
+        health_status: 'SEM_LEITURA',
       };
 
       const response = await apiFetch('/equipments', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      
+
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(responseData.message || 'Erro ao cadastrar equipamento.');
       }
-      
+
       showToast('success', 'Equipamento cadastrado com sucesso');
       reset();
     } catch (error: any) {
@@ -101,12 +109,14 @@ export const EquipmentRegistrationPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto w-full pb-12">
-      <div className="mb-6 border-b border-white/10 pb-4">
-        <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Cadastrar Equipamento</h2>
-        <p className="text-sm text-zinc-500 mt-1">Registre um novo ativo tecnológico e vincule-o ao setor responsável.</p>
+      <div className="mb-6 border-b border-[var(--color-border)] pb-4">
+        <h2 className="text-lg font-medium text-[var(--color-text-main)] tracking-tight">Cadastrar Equipamento</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          Registre um novo ativo tecnológico e vincule-o ao setor responsável.
+        </p>
       </div>
 
-      <div className="rounded-md border border-white/10 bg-zinc-950 p-6 md:p-8">
+      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
@@ -115,7 +125,7 @@ export const EquipmentRegistrationPage: React.FC = () => {
               {...register('patrimonyTag')}
               error={errors.patrimonyTag?.message}
             />
-            
+
             <Input
               label="Hostname"
               placeholder="Ex: pc-admin-01"
@@ -140,19 +150,21 @@ export const EquipmentRegistrationPage: React.FC = () => {
               label="Setor responsável"
               {...register('sectorId')}
               error={errors.sectorId?.message}
-              options={loadingSectors ? [] : sectors.map(s => ({ value: s.id, label: s.name }))}
+              options={loadingSectors ? [] : sectors.map((s) => ({ value: s.id, label: s.name }))}
               disabled={loadingSectors}
             />
           </div>
 
-          <div className="bg-zinc-900/50 p-4 rounded-md border border-white/5">
-            <h3 className="text-xs font-mono font-medium text-zinc-300 uppercase tracking-widest mb-1.5">Telemetria Automática</h3>
-            <p className="text-sm text-zinc-500">
+          <div className="bg-[var(--color-surface-elevated)] p-4 rounded-md border border-[var(--color-border)]">
+            <h3 className="text-xs font-mono font-medium text-[var(--color-text-main)] uppercase tracking-widest mb-1.5">
+              Telemetria Automática
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">
               O estado de saúde será definido automaticamente após o primeiro sinal do Agente Go instalado na máquina.
             </p>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-white/10">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={handleReset} disabled={isSubmitting}>
               Limpar formulário
             </Button>

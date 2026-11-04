@@ -24,8 +24,8 @@ export const HealthBadge: React.FC<HealthBadgeProps> = ({ status, reasons, varia
 
   const wrapper =
     variant === 'pill'
-      ? `inline-flex items-center gap-1.5 px-2 py-0.5 border rounded-full ${style.badge}`
-      : 'inline-flex items-center gap-2';
+      ? `inline-flex items-center gap-1.5 px-2.5 py-0.5 border rounded-full ${style.badge}`
+      : 'inline-flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]';
 
   return (
     <div
@@ -38,10 +38,10 @@ export const HealthBadge: React.FC<HealthBadgeProps> = ({ status, reasons, varia
       tabIndex={hasReasons ? 0 : undefined}
       aria-label={hasReasons ? `${style.label}: ${reasons!.join('. ')}` : style.label}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+      <span className={`w-2 h-2 rounded-full ${style.dot}`} aria-hidden="true" />
       <span
-        className={`font-mono tracking-wider ${
-          variant === 'pill' ? `text-[10px] ${style.text}` : 'text-xs text-zinc-300'
+        className={`font-mono font-medium tracking-wider ${
+          variant === 'pill' ? `text-[10px] ${style.text}` : `text-xs ${style.text}`
         }`}
       >
         {style.label}
@@ -51,15 +51,18 @@ export const HealthBadge: React.FC<HealthBadgeProps> = ({ status, reasons, varia
         <div
           role="tooltip"
           style={{ top: pos.top, left: pos.left }}
-          className="fixed z-50 w-72 max-w-[80vw] p-3 rounded-md border border-white/10 bg-zinc-950 shadow-xl shadow-black/50 pointer-events-none"
+          className="fixed z-50 w-72 max-w-[80vw] p-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl pointer-events-none"
         >
-          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">
+          <p className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-widest mb-2">
             Motivos
           </p>
           <ul className="space-y-1.5">
             {reasons!.map((reason, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-zinc-300 leading-snug normal-case font-sans">
-                <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${style.bullet}`} />
+              <li
+                key={i}
+                className="flex items-start gap-2 text-xs text-[var(--color-text-main)] leading-snug normal-case font-sans"
+              >
+                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${style.bullet}`} />
                 <span>{reason}</span>
               </li>
             ))}
