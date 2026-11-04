@@ -18,24 +18,7 @@ export async function createTelemetry(
     request: FastifyRequest,
     reply: FastifyReply
 ) {
-    const result =
-        telemetrySchema.safeParse(request.body);
-
-    if (!result.success) {
-        return reply.status(400).send({
-            success: false,
-            message:
-                "Dados de telemetria inv├ílidos",
-            errors: result.error.issues.map(
-                (issue) => ({
-                    field: issue.path.join("."),
-                    message: issue.message,
-                })
-            ),
-        });
-    }
-
-    const telemetry = result.data;
+    const telemetry = telemetrySchema.parse(request.body);
 
     const matchingEquipments = await db
         .select({ id: equipments.id })
@@ -50,7 +33,7 @@ export async function createTelemetry(
             if (!fs.existsSync(logPath) || !fs.readFileSync(logPath, 'utf8').includes(telemetry.hostname)) {
                  fs.appendFileSync(logPath, logLine);
             }
-        } catch(e) {
+        } catch {
             // Ignora erro de arquivo
         }
 
@@ -106,7 +89,7 @@ export async function createTelemetry(
         smart_198: telemetry.smart_198 ?? null,
     });
 
-    console.log(
+    request.log.info(
         `[TELEMETRY V2] Gravado equipamento ${equipment.id} | Host: ${telemetry.hostname} | Status: ${finalStatus} | Protocol: ${telemetry.protocol || 'N/A'}`
     );
 

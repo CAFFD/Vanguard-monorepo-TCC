@@ -8,7 +8,6 @@
     "target": "esnext",
     "lib": ["esnext"],
 
-
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -23,5 +22,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src", "api"]
+  "include": ["src", "api", "vitest.config.ts", "drizzle.config.ts", "scratch.ts"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,7 +1,12 @@
 import type { FastifyInstance } from "fastify";
-import { createUser, getUsers } from "../controllers/user-controller.js";
+import { createUser, deleteUser, getUsers } from "../controllers/user-controller.js";
+import { authenticated, gestorOnly } from "../middlewares/auth.js";
 
 export async function userRoutes(app: FastifyInstance) {
-    app.post("/users", createUser);
-    app.get("/users", getUsers);
+    // Administração de contas: exclusivo do GESTOR.
+    app.post("/users", { preHandler: gestorOnly }, createUser);
+    app.delete("/users/:id", { preHandler: gestorOnly }, deleteUser);
+
+    // Leitura (sem hash) liberada a ambos — usada para atribuir técnicos a chamados.
+    app.get("/users", { preHandler: authenticated }, getUsers);
 }

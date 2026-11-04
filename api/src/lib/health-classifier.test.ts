@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyHealth, TelemetryRow } from "./health-classifier.js";
+import { classifyHealth, type TelemetryRow } from "./health-classifier.js";
 
 describe("classifyHealth", () => {
     const nowMs = new Date("2026-10-06T12:00:00Z").getTime();

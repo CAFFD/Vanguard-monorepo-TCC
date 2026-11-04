@@ -13,42 +13,42 @@ export interface HealthStyle {
   bullet: string;
 }
 
-// Classes escritas por extenso para o Tailwind detectá-las no build.
+// Classes semânticas para garantir contraste WCAG AA tanto em Dark quanto em Light Mode.
 const STYLES: Record<HealthStatusKey, HealthStyle> = {
   NORMAL: {
     label: 'NORMAL',
     dot: 'bg-emerald-500',
-    text: 'text-emerald-300',
-    badge: 'bg-emerald-500/10 border-emerald-500/20',
+    text: 'text-[var(--color-status-normal-text)]',
+    badge: 'bg-emerald-500/15 border-emerald-500/35',
     bullet: 'bg-emerald-500',
   },
   ATENCAO: {
     label: 'ATENÇÃO',
     dot: 'bg-amber-500',
-    text: 'text-amber-300',
-    badge: 'bg-amber-500/10 border-amber-500/20',
+    text: 'text-[var(--color-status-warning-text)]',
+    badge: 'bg-amber-500/15 border-amber-500/35',
     bullet: 'bg-amber-500',
   },
   CRITICO: {
     label: 'CRÍTICO',
     dot: 'bg-red-500',
-    text: 'text-red-300',
-    badge: 'bg-red-500/10 border-red-500/20',
+    text: 'text-[var(--color-status-critical-text)]',
+    badge: 'bg-red-500/15 border-red-500/35',
     bullet: 'bg-red-500',
   },
   OFFLINE: {
     label: 'OFFLINE',
     dot: 'bg-zinc-500',
-    text: 'text-zinc-400',
-    badge: 'bg-zinc-500/10 border-zinc-500/20',
+    text: 'text-[var(--color-status-offline-text)]',
+    badge: 'bg-zinc-500/15 border-zinc-500/35',
     bullet: 'bg-zinc-500',
   },
   SEM_LEITURA: {
     label: 'SEM LEITURA',
-    dot: 'bg-violet-400',
-    text: 'text-violet-300',
-    badge: 'bg-violet-500/10 border-violet-500/20 border-dashed',
-    bullet: 'bg-violet-400',
+    dot: 'bg-violet-500',
+    text: 'text-[var(--color-status-noreading-text)]',
+    badge: 'bg-violet-500/15 border-violet-500/35 border-dashed',
+    bullet: 'bg-violet-500',
   },
 };
 

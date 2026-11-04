@@ -1,6 +1,5 @@
 import { db } from './src/db/index.js';
-import { equipments, telemetryHistory } from './src/db/schema.js';
-import { desc } from 'drizzle-orm';
+import { equipments } from './src/db/schema.js';
 
 async function main() {
   const allEquipments = await db.select().from(equipments);

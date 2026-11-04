@@ -7,6 +7,7 @@ import {
     updateEquipmentSchema,
 } from "../schemas/equipment-schemas.js";
 import { classifyHealth } from "../lib/health-classifier.js";
+import { ConflictError, NotFoundError } from "../lib/errors.js";
 
 interface UpdateEquipmentParams {
     id: string;
@@ -16,20 +17,8 @@ export async function createEquipment(
     request: FastifyRequest,
     reply: FastifyReply
 ) {
-    const result = createEquipmentSchema.safeParse(request.body);
-
-    if (!result.success) {
-        return reply.status(400).send({
-            success: false,
-            message: "Dados de equipamento inválidos",
-            errors: result.error.issues.map((issue) => ({
-                field: issue.path.join("."),
-                message: issue.message,
-            })),
-        });
-    }
-
-    const { id, sector_id, mac_address, patrimony_tag, hostname, health_status } = result.data;
+    const { id, sector_id, mac_address, patrimony_tag, hostname, health_status } =
+        createEquipmentSchema.parse(request.body);
 
     try {
         const [createdEquipment] = await db
@@ -48,18 +37,16 @@ export async function createEquipment(
             success: true,
             data: createdEquipment,
         });
-    } catch (error: any) {
-        if (error.code === '23505') {
-            return reply.status(409).send({
-                success: false,
-                message: "Já existe um equipamento cadastrado com este Endereço MAC ou Número de Patrimônio.",
-            });
+    } catch (error: unknown) {
+        const pgCode =
+            (error as { code?: string })?.code ??
+            (error as { cause?: { code?: string } })?.cause?.code;
+        if (pgCode === "23505") {
+            throw new ConflictError(
+                "Já existe um equipamento cadastrado com este Endereço MAC ou Número de Patrimônio."
+            );
         }
-        console.error("Erro ao cadastrar equipamento:", error);
-        return reply.status(500).send({
-            success: false,
-            message: "Erro interno ao cadastrar o equipamento.",
-        });
+        throw error;
     }
 }
 
@@ -70,7 +57,6 @@ export async function getEquipments(
     const allEquipments = await db.select().from(equipments);
     
     // Motor de Regras: Calcular status ao vivo baseado no histórico
-    const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
     const now = Date.now();
     
     const equipmentsWithLiveStatus = await Promise.all(
@@ -103,7 +89,7 @@ export async function getEquipmentById(
     
     const [eqData] = await db.select().from(equipments).where(eq(equipments.id, id));
     if (!eqData) {
-        return reply.status(404).send({ success: false, message: "Equipamento não encontrado" });
+        throw new NotFoundError("Equipamento não encontrado");
     }
 
     // Calcula status ao vivo (mesma lógica simplificada do getEquipments)
@@ -129,21 +115,10 @@ export async function updateEquipment(
     }>,
     reply: FastifyReply
 ) {
-    const result = updateEquipmentSchema.safeParse(request.body);
-
-    if (!result.success) {
-        return reply.status(400).send({
-            success: false,
-            message: "Dados de equipamento inválidos",
-            errors: result.error.issues.map((issue) => ({
-                field: issue.path.join("."),
-                message: issue.message,
-            })),
-        });
-    }
+    const { sector_id, mac_address, patrimony_tag, hostname, health_status } =
+        updateEquipmentSchema.parse(request.body);
 
     const { id } = request.params;
-    const { sector_id, mac_address, patrimony_tag, hostname, health_status } = result.data;
 
     const [updatedEquipment] = await db
         .update(equipments)
@@ -158,10 +133,7 @@ export async function updateEquipment(
         .returning();
 
     if (!updatedEquipment) {
-        return reply.status(404).send({
-            success: false,
-            message: "Equipamento não encontrado",
-        });
+        throw new NotFoundError("Equipamento não encontrado");
     }
 
     return reply.status(200).send({

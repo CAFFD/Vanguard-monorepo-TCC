@@ -14,7 +14,8 @@ export class OccurrenceController {
       .values({
         id: randomUUID(),
         equipment_id: data.equipment_id,
-        technician_id: data.technician_id,
+        // Sem técnico explícito, o chamado é atribuído ao usuário autenticado.
+        technician_id: data.technician_id ?? request.user?.sub ?? null,
         created_at: new Date(),
         origin: data.origin,
         priority: data.priority,

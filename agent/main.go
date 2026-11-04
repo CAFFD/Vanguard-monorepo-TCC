@@ -191,6 +191,13 @@ func obterUsoDisco() (int, error) {
 // COMUNICAÇÃO — POST /telemetry
 // --------------------------------------------------
 
+func apiKey() string {
+	if key := os.Getenv("VANGUARD_API_KEY"); key != "" {
+		return key
+	}
+	return os.Getenv("AGENT_API_KEY")
+}
+
 func enviarTelemetria(telemetria Telemetry) error {
 	jsonData, err := json.Marshal(telemetria)
 	if err != nil {
@@ -207,6 +214,9 @@ func enviarTelemetria(telemetria Telemetry) error {
 			return fmt.Errorf("falha ao criar request: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
+		if key := apiKey(); key != "" {
+			req.Header.Set("x-api-key", key)
+		}
 
 		resp, err := client.Do(req)
 		if err != nil {

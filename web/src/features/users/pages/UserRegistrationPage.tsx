@@ -14,31 +14,31 @@ export const UserRegistrationPage: React.FC = () => {
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm<UserFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting, isDirty },
+  } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       name: '',
       email: '',
       role: undefined,
       password: '',
-      confirmPassword: ''
-    }
+      confirmPassword: '',
+    },
   });
 
   const onSubmit = async (data: UserFormData) => {
     try {
-      // Hash da senha via Web Crypto API (SHA-256) antes de enviar ao backend
-      const encoder = new TextEncoder();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data.password));
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const password_hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-
+      // A senha é enviada via HTTPS e derivada com scrypt + sal aleatório no servidor.
       const payload = {
         id: crypto.randomUUID(),
         name: data.name,
         email: data.email,
         role: data.role,
-        password_hash,
+        password: data.password,
       };
 
       const response = await apiFetch('/users', {
@@ -73,9 +73,9 @@ export const UserRegistrationPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto w-full pb-12">
-      <div className="mb-6 border-b border-white/10 pb-4">
-        <h2 className="text-lg font-medium text-zinc-100 tracking-tight">Cadastrar usuário</h2>
-        <p className="text-sm text-zinc-500 mt-1">
+      <div className="mb-6 border-b border-[var(--color-border)] pb-4">
+        <h2 className="text-lg font-medium text-[var(--color-text-main)] tracking-tight">Cadastrar usuário</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Registre um novo profissional com acesso ao sistema de gestão de ativos.
         </p>
       </div>
@@ -108,14 +108,20 @@ export const UserRegistrationPage: React.FC = () => {
               error={errors.role?.message}
               options={[
                 { value: 'GESTOR', label: 'Gestor' },
-                { value: 'TECNICO', label: 'Técnico' }
+                { value: 'TECNICO', label: 'Técnico' },
               ]}
             />
-            <div className="mt-2 text-xs text-zinc-500 flex gap-1.5 items-start">
-              <Info size={14} className="shrink-0 mt-0.5" />
+            <div className="mt-2 text-xs text-[var(--color-text-secondary)] flex gap-1.5 items-start">
+              <Info size={14} className="shrink-0 mt-0.5" aria-hidden="true" />
               <div className="space-y-1">
-                <p><strong className="font-medium text-zinc-300">Gestor:</strong> acompanha a saúde do parque, alertas e informações gerenciais.</p>
-                <p><strong className="font-medium text-zinc-300">Técnico:</strong> analisa alertas, realiza manutenções e registra intervenções.</p>
+                <p>
+                  <strong className="font-medium text-[var(--color-text-main)]">Gestor:</strong> acompanha a saúde do
+                  parque, alertas, usuários, setores e informações gerenciais.
+                </p>
+                <p>
+                  <strong className="font-medium text-[var(--color-text-main)]">Técnico:</strong> analisa alertas,
+                  realiza manutenções e registra intervenções nos prontuários.
+                </p>
               </div>
             </div>
           </div>
@@ -124,15 +130,17 @@ export const UserRegistrationPage: React.FC = () => {
             <div className="relative">
               <Input
                 label="Senha"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
+                helperText="Mínimo de 8 caracteres com letras e números."
                 {...register('password')}
                 error={errors.password?.message}
+                autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600 focus:outline-none"
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                className="absolute right-3 top-[33px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded p-0.5"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -140,9 +148,10 @@ export const UserRegistrationPage: React.FC = () => {
 
             <Input
               label="Confirmar senha"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               {...register('confirmPassword')}
               error={errors.confirmPassword?.message}
+              autoComplete="new-password"
             />
           </div>
 

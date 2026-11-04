@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiFetch } from '../../../lib/api';
 import { useToast } from '../../../components/feedback/ToastContext';
+import { useAuth } from '../../auth/context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { occurrenceSchema } from '../../occurrences/schemas/occurrenceSchema';
 import type { OccurrenceFormData } from '../../occurrences/schemas/occurrenceSchema';
 import { Select } from '../../../components/ui/Select';
+import { Button } from '../../../components/ui/Button';
 import { HealthBadge } from '../components/HealthBadge';
 import { HealthReasons } from '../components/HealthReasons';
+
 interface Equipment {
   id: string;
   patrimony_tag: string;
@@ -35,62 +38,77 @@ interface Occurrence {
 export const EquipmentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { showToast } = useToast();
-  
+  const { user } = useAuth();
+
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<OccurrenceFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<OccurrenceFormData>({
     resolver: zodResolver(occurrenceSchema),
     defaultValues: {
       equipmentId: id || '',
-      technicianId: 'b75f8221-50be-4a57-8be7-3bf76b4a8e80', // Mocked technician until Auth
+      technicianId: user?.id || '',
       origin: 'IDENTIFICACAO_TECNICA',
       priority: 'MEDIA',
       description: '',
       diagnosis: '',
       actionTaken: '',
-    }
+    },
   });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [eqRes, occRes] = await Promise.all([
-        apiFetch(`/equipments/${id}`),
-        apiFetch(`/occurrences/equipment/${id}`)
-      ]);
-
-      if (!eqRes.ok) throw new Error('Falha ao carregar equipamento.');
-      if (!occRes.ok) throw new Error('Falha ao carregar histórico de ocorrências.');
-
-      const eqData = await eqRes.json();
-      const occData = await occRes.json();
-
-      setEquipment(eqData);
-      setOccurrences(occData);
-    } catch (error: any) {
-      showToast('error', error.message || 'Erro ao carregar prontuário.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (id) {
-      fetchData();
-    }
-  }, [id, showToast]);
+    if (!id) return;
+    let isMounted = true;
+
+    const loadProntuario = async () => {
+      try {
+        const [eqRes, occRes] = await Promise.all([
+          apiFetch(`/equipments/${id}`),
+          apiFetch(`/occurrences/equipment/${id}`),
+        ]);
+
+        if (!eqRes.ok) throw new Error('Falha ao carregar equipamento.');
+        if (!occRes.ok) throw new Error('Falha ao carregar histórico de ocorrências.');
+
+        const eqData = await eqRes.json();
+        const occData = await occRes.json();
+
+        if (isMounted) {
+          setEquipment(eqData);
+          setOccurrences(occData);
+        }
+      } catch (error: any) {
+        if (isMounted) {
+          showToast('error', error.message || 'Erro ao carregar prontuário.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProntuario();
+    return () => {
+      isMounted = false;
+    };
+  }, [id, reloadKey, showToast]);
 
   const onSubmit = async (data: OccurrenceFormData) => {
     try {
       const res = await apiFetch('/occurrences', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           equipment_id: data.equipmentId,
-          technician_id: data.technicianId || null,
+          technician_id: user?.id || data.technicianId || null,
           origin: data.origin,
           priority: data.priority,
           description: data.description,
@@ -100,74 +118,105 @@ export const EquipmentDetail: React.FC = () => {
       });
 
       if (!res.ok) {
-        throw new Error('Falha ao registrar ocorrência.');
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody?.message || 'Falha ao registrar ocorrência.');
       }
 
       showToast('success', 'Manutenção registrada com sucesso!');
-      reset();
+      reset({
+        equipmentId: id || '',
+        technicianId: user?.id || '',
+        origin: 'IDENTIFICACAO_TECNICA',
+        priority: 'MEDIA',
+        description: '',
+        diagnosis: '',
+        actionTaken: '',
+      });
       setShowForm(false);
-      fetchData();
+      setReloadKey((prev) => prev + 1);
     } catch (error: any) {
       showToast('error', error.message);
     }
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-zinc-500 font-mono text-sm">Carregando prontuário...</div>;
+    return (
+      <div className="p-8 text-center text-[var(--color-text-secondary)] font-mono text-sm">
+        Carregando prontuário...
+      </div>
+    );
   }
 
   if (!equipment) {
-    return <div className="p-8 text-center text-red-500 font-mono text-sm">Equipamento não encontrado.</div>;
+    return (
+      <div className="p-8 text-center text-[var(--color-danger)] font-mono text-sm">
+        Equipamento não encontrado.
+      </div>
+    );
   }
 
   return (
     <div className="max-w-4xl mx-auto pb-12 w-full">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/10 pb-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between border-b border-[var(--color-border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-medium text-zinc-100">{equipment.hostname}</h2>
+          <div className="flex items-center gap-2.5 mb-1">
+            <h2 className="text-xl font-medium text-[var(--color-text-main)]">{equipment.hostname}</h2>
             <HealthBadge status={equipment.health_status} variant="pill" />
           </div>
-          <p className="text-sm text-zinc-500 font-mono">ID: {equipment.id}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] font-mono">ID: {equipment.id}</p>
         </div>
-        <Link to="/equipamentos" className="mt-4 sm:mt-0 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors">
+        <Link
+          to="/equipamentos"
+          className="mt-4 sm:mt-0 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
+        >
           &larr; Voltar
         </Link>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">Hostname</p>
-          <p className="font-mono text-sm text-zinc-200">{equipment.hostname}</p>
+        <div className="p-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <p className="text-[10px] text-[var(--color-text-secondary)] font-medium uppercase tracking-widest mb-1">
+            Hostname
+          </p>
+          <p className="font-mono text-sm text-[var(--color-text-main)]">{equipment.hostname}</p>
         </div>
-        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">Patrimônio</p>
-          <p className="font-mono text-sm text-zinc-200">{equipment.patrimony_tag}</p>
+        <div className="p-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <p className="text-[10px] text-[var(--color-text-secondary)] font-medium uppercase tracking-widest mb-1">
+            Patrimônio
+          </p>
+          <p className="font-mono text-sm text-[var(--color-text-main)]">{equipment.patrimony_tag}</p>
         </div>
-        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">MAC Address</p>
-          <p className="font-mono text-sm text-zinc-200">{equipment.mac_address}</p>
+        <div className="p-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <p className="text-[10px] text-[var(--color-text-secondary)] font-medium uppercase tracking-widest mb-1">
+            MAC Address
+          </p>
+          <p className="font-mono text-sm text-[var(--color-text-main)]">{equipment.mac_address}</p>
         </div>
-        <div className="p-4 rounded-md border border-white/10 bg-zinc-900/40">
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mb-1">Sector ID</p>
-          <p className="font-mono text-sm text-zinc-200">{equipment.sector_id.slice(0,8)}...</p>
+        <div className="p-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <p className="text-[10px] text-[var(--color-text-secondary)] font-medium uppercase tracking-widest mb-1">
+            Sector ID
+          </p>
+          <p className="font-mono text-sm text-[var(--color-text-main)]">{equipment.sector_id.slice(0, 8)}...</p>
         </div>
       </div>
 
       <HealthReasons status={equipment.health_status} reasons={equipment.health_reasons} />
 
-      <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-        <h3 className="text-sm font-medium text-zinc-100">Log de Ocorrências</h3>
-        <button 
+      <div className="flex justify-between items-center mb-4 border-b border-[var(--color-border)] pb-2">
+        <h3 className="text-sm font-medium text-[var(--color-text-main)]">Log de Ocorrências</h3>
+        <button
+          type="button"
           onClick={() => setShowForm(!showForm)}
-          className="text-xs font-medium text-zinc-100 bg-zinc-800 border border-white/10 px-3 py-1.5 rounded-md hover:bg-zinc-700 transition-colors"
+          aria-expanded={showForm}
+          aria-label={showForm ? 'Cancelar registro de manutenção' : 'Registrar nova manutenção'}
+          className="text-xs font-medium text-[var(--color-text-main)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] px-3 py-1.5 rounded-md hover:border-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] transition-colors"
         >
           {showForm ? 'Cancelar' : '+ Registrar Manutenção'}
         </button>
       </div>
 
       {showForm && (
-        <div className="rounded-md border border-white/10 bg-zinc-900/50 p-6 mb-8">
+        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-6 mb-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
@@ -177,7 +226,7 @@ export const EquipmentDetail: React.FC = () => {
                 options={[
                   { value: 'IDENTIFICACAO_TECNICA', label: 'Identificação técnica' },
                   { value: 'TELEMETRIA', label: 'Alerta da Telemetria' },
-                  { value: 'SOLICITACAO_USUARIO', label: 'Chamado de Usuário' }
+                  { value: 'SOLICITACAO_USUARIO', label: 'Chamado de Usuário' },
                 ]}
               />
               <Select
@@ -188,46 +237,57 @@ export const EquipmentDetail: React.FC = () => {
                   { value: 'MEDIA', label: 'Média' },
                   { value: 'ALTA', label: 'Alta' },
                   { value: 'CRITICA', label: 'Crítica' },
-                  { value: 'BAIXA', label: 'Baixa' }
+                  { value: 'BAIXA', label: 'Baixa' },
                 ]}
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-zinc-400">Descrição do Problema</label>
+              <label htmlFor="occ-description" className="text-xs font-medium text-[var(--color-text-main)]">
+                Descrição do Problema
+              </label>
               <textarea
-                className="w-full mt-1.5 p-3 text-sm bg-zinc-950 border border-white/10 rounded-md text-zinc-200 placeholder-zinc-700 min-h-[80px] focus:outline-none focus:border-zinc-500"
+                id="occ-description"
+                className="w-full mt-1.5 p-3 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] min-h-[80px] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 {...register('description')}
               />
-              {errors.description && <span className="text-xs text-red-500 mt-1 block">{errors.description.message}</span>}
+              {errors.description && (
+                <span className="text-xs text-[var(--color-danger)] mt-1 block">{errors.description.message}</span>
+              )}
             </div>
 
             <div>
-              <label className="text-xs font-medium text-zinc-400">Diagnóstico Técnico (Opcional)</label>
+              <label htmlFor="occ-diagnosis" className="text-xs font-medium text-[var(--color-text-main)]">
+                Diagnóstico Técnico (Opcional)
+              </label>
               <textarea
-                className="w-full mt-1.5 p-3 text-sm bg-zinc-950 border border-white/10 rounded-md text-zinc-200 placeholder-zinc-700 min-h-[60px] focus:outline-none focus:border-zinc-500"
+                id="occ-diagnosis"
+                className="w-full mt-1.5 p-3 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] min-h-[60px] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 {...register('diagnosis')}
               />
-              {errors.diagnosis && <span className="text-xs text-red-500 mt-1 block">{errors.diagnosis.message}</span>}
+              {errors.diagnosis && (
+                <span className="text-xs text-[var(--color-danger)] mt-1 block">{errors.diagnosis.message}</span>
+              )}
             </div>
 
             <div>
-              <label className="text-xs font-medium text-zinc-400">Ação Tomada</label>
+              <label htmlFor="occ-action" className="text-xs font-medium text-[var(--color-text-main)]">
+                Ação Tomada
+              </label>
               <textarea
-                className="w-full mt-1.5 p-3 text-sm bg-zinc-950 border border-white/10 rounded-md text-zinc-200 placeholder-zinc-700 min-h-[80px] focus:outline-none focus:border-zinc-500"
+                id="occ-action"
+                className="w-full mt-1.5 p-3 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] min-h-[80px] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 {...register('actionTaken')}
               />
-              {errors.actionTaken && <span className="text-xs text-red-500 mt-1 block">{errors.actionTaken.message}</span>}
+              {errors.actionTaken && (
+                <span className="text-xs text-[var(--color-danger)] mt-1 block">{errors.actionTaken.message}</span>
+              )}
             </div>
 
             <div className="flex justify-end pt-2">
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="text-xs font-medium text-zinc-950 bg-zinc-100 px-4 py-2 rounded-md hover:bg-white transition-colors disabled:opacity-50"
-              >
+              <Button type="submit" isLoading={isSubmitting}>
                 Salvar Registro
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -235,43 +295,54 @@ export const EquipmentDetail: React.FC = () => {
 
       <div className="space-y-4">
         {occurrences.length === 0 ? (
-          <div className="p-8 text-center border border-white/5 rounded-md bg-zinc-900/20">
-            <p className="text-sm font-mono text-zinc-500">Nenhum evento registrado.</p>
+          <div className="p-8 text-center border border-[var(--color-border)] rounded-md bg-[var(--color-surface)]">
+            <p className="text-sm font-mono text-[var(--color-text-secondary)]">Nenhum evento registrado.</p>
           </div>
         ) : (
           occurrences.map((occ) => (
-            <div key={occ.id} className="rounded-md border border-white/10 bg-zinc-950 p-5">
+            <div key={occ.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded-sm border text-[10px] font-mono tracking-widest uppercase
-                    ${occ.priority === 'CRITICA' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 
-                      occ.priority === 'ALTA' ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' :
-                      occ.priority === 'MEDIA' ? 'border-zinc-500/30 text-zinc-300 bg-zinc-500/10' : 'border-zinc-700 text-zinc-400'}`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-sm border text-[10px] font-mono tracking-widest uppercase ${
+                      occ.priority === 'CRITICA'
+                        ? 'border-red-500/35 text-[var(--color-status-critical-text)] bg-red-500/15'
+                        : occ.priority === 'ALTA'
+                          ? 'border-amber-500/35 text-[var(--color-status-warning-text)] bg-amber-500/15'
+                          : 'border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-surface-elevated)]'
+                    }`}
+                  >
                     {occ.priority}
                   </span>
-                  <span className="text-xs text-zinc-500 font-mono">Origin: {occ.origin}</span>
+                  <span className="text-xs text-[var(--color-text-secondary)] font-mono">Origin: {occ.origin}</span>
                 </div>
-                <span className="text-xs font-mono text-zinc-500">
+                <span className="text-xs font-mono text-[var(--color-text-secondary)]">
                   {new Date(occ.created_at).toLocaleString('pt-BR')}
                 </span>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <h5 className="text-[10px] font-medium uppercase text-zinc-500 tracking-widest mb-1">Issue</h5>
-                  <p className="text-sm text-zinc-300">{occ.description}</p>
+                  <h5 className="text-[10px] font-medium uppercase text-[var(--color-text-secondary)] tracking-widest mb-1">
+                    Issue
+                  </h5>
+                  <p className="text-sm text-[var(--color-text-main)]">{occ.description}</p>
                 </div>
 
                 {occ.diagnosis && (
                   <div>
-                    <h5 className="text-[10px] font-medium uppercase text-zinc-500 tracking-widest mb-1">Diagnosis</h5>
-                    <p className="text-sm text-zinc-300">{occ.diagnosis}</p>
+                    <h5 className="text-[10px] font-medium uppercase text-[var(--color-text-secondary)] tracking-widest mb-1">
+                      Diagnosis
+                    </h5>
+                    <p className="text-sm text-[var(--color-text-main)]">{occ.diagnosis}</p>
                   </div>
                 )}
 
                 <div>
-                  <h5 className="text-[10px] font-medium uppercase text-zinc-500 tracking-widest mb-1">Resolution</h5>
-                  <p className="text-sm text-zinc-300">{occ.action_taken || '-'}</p>
+                  <h5 className="text-[10px] font-medium uppercase text-[var(--color-text-secondary)] tracking-widest mb-1">
+                    Resolution
+                  </h5>
+                  <p className="text-sm text-[var(--color-text-main)]">{occ.action_taken || '-'}</p>
                 </div>
               </div>
             </div>
