@@ -112,4 +112,56 @@ describe("classifyHealth", () => {
         const result = classifyHealth(current, previous, nowMs);
         expect(result.status).toBe("ATENÇÃO");
     });
+
+    // Prioridade de Estado: SEM_LEITURA e CRÍTICO não podem ser ocultados por OFFLINE após timeout de 2h
+    it("mantém SEM_LEITURA mesmo após o timeout de 2 horas e adiciona observação de ativo offline", () => {
+        const row = {
+            ...baseRow,
+            collection_status: "failed",
+            created_at: new Date(nowMs - 5 * 60 * 60 * 1000), // 5 hours ago
+        };
+        const result = classifyHealth(row, undefined, nowMs);
+        expect(result.status).toBe("SEM_LEITURA");
+        expect(result.reasons).toContain("O agente local não possui permissão para ler o disco ou o formato não é suportado");
+        expect(result.reasons).toContain("Ativo offline há mais de 2 horas");
+    });
+
+    it("mantém CRÍTICO mesmo após o timeout de 2 horas e adiciona observação de ativo offline", () => {
+        const row = {
+            ...baseRow,
+            smart_passed: false,
+            critical_warnings: 1,
+            created_at: new Date(nowMs - 4 * 60 * 60 * 1000), // 4 hours ago
+        };
+        const result = classifyHealth(row, undefined, nowMs);
+        expect(result.status).toBe("CRÍTICO");
+        expect(result.reasons.some(r => r.includes("smart_passed = false"))).toBe(true);
+        expect(result.reasons).toContain("Ativo offline há mais de 2 horas");
+    });
+
+    it("transita para OFFLINE após 2 horas quando o último estado era ATENÇÃO (não crítico e não sem leitura)", () => {
+        const row = {
+            ...baseRow,
+            disk_usage_percent: "95.0",
+            created_at: new Date(nowMs - 3 * 60 * 60 * 1000), // 3 hours ago
+        };
+        const result = classifyHealth(row, undefined, nowMs);
+        expect(result.status).toBe("OFFLINE");
+        expect(result.reasons).toContain("Dispositivo inativo há mais de 2 horas");
+    });
+
+    it("preserva SEM_LEITURA ou CRÍTICO gravado no banco (fallbackStoredStatus) quando em timeout ou sem histórico", () => {
+        const noHistorySemLeitura = classifyHealth(undefined, undefined, nowMs, "SEM_LEITURA");
+        expect(noHistorySemLeitura.status).toBe("SEM_LEITURA");
+        expect(noHistorySemLeitura.reasons).toContain("Ativo offline há mais de 2 horas");
+
+        const noHistoryCritico = classifyHealth(undefined, undefined, nowMs, "CRÍTICO");
+        expect(noHistoryCritico.status).toBe("CRÍTICO");
+        expect(noHistoryCritico.reasons).toContain("Ativo offline há mais de 2 horas");
+
+        const timedOutRow = { ...baseRow, created_at: new Date(nowMs - 3 * 60 * 60 * 1000) };
+        const timedOutWithStoredSemLeitura = classifyHealth(timedOutRow, undefined, nowMs, "SEM_LEITURA");
+        expect(timedOutWithStoredSemLeitura.status).toBe("SEM_LEITURA");
+        expect(timedOutWithStoredSemLeitura.reasons).toContain("Ativo offline há mais de 2 horas");
+    });
 });

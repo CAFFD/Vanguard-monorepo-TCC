@@ -21,18 +21,58 @@ export type HealthResult = {
     reasons: string[];
 };
 
-export function classifyHealth(latest: TelemetryRow | undefined, previous: TelemetryRow | undefined, nowMs: number = Date.now()): HealthResult {
+const OFFLINE_TIMEOUT_REASON = "Ativo offline há mais de 2 horas";
+const NO_READING_DEFAULT_REASON = "O agente local não possui permissão para ler o disco ou o formato não é suportado";
+
+function normalizeStoredStatus(rawStatus?: string | null): HealthStatus | null {
+    if (!rawStatus) return null;
+    const normalized = rawStatus
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .replace(/\s+/g, "_");
+
+    if (normalized === "SEM_LEITURA") return "SEM_LEITURA";
+    if (normalized === "CRITICO") return "CRÍTICO";
+    if (normalized === "ATENCAO") return "ATENÇÃO";
+    if (normalized === "NORMAL") return "NORMAL";
+    if (normalized === "OFFLINE") return "OFFLINE";
+    return null;
+}
+
+export function classifyHealth(
+    latest: TelemetryRow | undefined,
+    previous: TelemetryRow | undefined,
+    nowMs: number = Date.now(),
+    fallbackStoredStatus?: string | null
+): HealthResult {
+    const storedStatus = normalizeStoredStatus(fallbackStoredStatus);
+
     if (!latest || !latest.created_at) {
+        if (storedStatus === "SEM_LEITURA") {
+            return {
+                status: "SEM_LEITURA",
+                reasons: [NO_READING_DEFAULT_REASON, OFFLINE_TIMEOUT_REASON],
+            };
+        }
+        if (storedStatus === "CRÍTICO") {
+            return {
+                status: "CRÍTICO",
+                reasons: ["Estado crítico registrado no banco de dados", OFFLINE_TIMEOUT_REASON],
+            };
+        }
         return { status: "OFFLINE", reasons: ["Nenhuma telemetria recebida recentemente"] };
     }
 
     const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
-    if (nowMs - latest.created_at.getTime() > TWO_HOURS_IN_MS) {
-        return { status: "OFFLINE", reasons: ["Dispositivo inativo há mais de 2 horas"] };
-    }
+    const isTimedOut = nowMs - latest.created_at.getTime() > TWO_HOURS_IN_MS;
 
     if (latest.collection_status === "failed") {
-        return { status: "SEM_LEITURA", reasons: ["O agente local não possui permissão para ler o disco ou o formato não é suportado"] };
+        const reasons = [NO_READING_DEFAULT_REASON];
+        if (isTimedOut) {
+            reasons.push(OFFLINE_TIMEOUT_REASON);
+        }
+        return { status: "SEM_LEITURA", reasons };
     }
 
     const reasons: string[] = [];
@@ -68,6 +108,30 @@ export function classifyHealth(latest: TelemetryRow | undefined, previous: Telem
         reasons.push("Aumento na contagem de setores pendentes e incorrigíveis (SATA/Legado)");
     }
 
+    if (isCritical) {
+        if (isTimedOut) {
+            reasons.push(OFFLINE_TIMEOUT_REASON);
+        }
+        return { status: "CRÍTICO", reasons };
+    }
+
+    // Se expirou o timeout de 2h e o último estado persistido no banco era SEM_LEITURA ou CRÍTICO, preserva a prioridade de erro
+    if (isTimedOut) {
+        if (storedStatus === "SEM_LEITURA") {
+            return {
+                status: "SEM_LEITURA",
+                reasons: [NO_READING_DEFAULT_REASON, OFFLINE_TIMEOUT_REASON],
+            };
+        }
+        if (storedStatus === "CRÍTICO") {
+            return {
+                status: "CRÍTICO",
+                reasons: ["Estado crítico registrado no banco de dados", OFFLINE_TIMEOUT_REASON],
+            };
+        }
+        return { status: "OFFLINE", reasons: ["Dispositivo inativo há mais de 2 horas"] };
+    }
+
     // 2. Warning Checks
     if (latest.collection_status === "partial") {
         isWarning = true;
@@ -100,10 +164,6 @@ export function classifyHealth(latest: TelemetryRow | undefined, previous: Telem
         if (!reasons.some(r => r.includes("setores pendentes"))) {
             reasons.push(`Existem ${smart197} setor(es) pendente(s) de realocação (SATA/Legado)`);
         }
-    }
-
-    if (isCritical) {
-        return { status: "CRÍTICO", reasons };
     }
 
     if (isWarning) {

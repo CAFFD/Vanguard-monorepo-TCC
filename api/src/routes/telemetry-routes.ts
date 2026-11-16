@@ -11,8 +11,15 @@ export async function telemetryRoutes(
     app: FastifyInstance
 ) {
     // Ingestão M2M: somente o Agente de Borda (header x-api-key).
+    // Suporta tanto /telemetry quanto o alias /api/telemetry.
     app.post(
         "/telemetry",
+        { preHandler: [requireAgentKey] },
+        createTelemetry
+    );
+
+    app.post(
+        "/api/telemetry",
         { preHandler: [requireAgentKey] },
         createTelemetry
     );
