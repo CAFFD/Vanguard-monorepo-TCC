@@ -57,9 +57,11 @@ export async function createTelemetry(
 
     const diskUsageVal = telemetry.disk_usage_percent ?? telemetry.disk_usage;
 
+    const nowDate = new Date();
+
     await db.insert(telemetryHistory).values({
         id: randomUUID(),
-        created_at: new Date(),
+        created_at: nowDate,
         equipment_id: equipment.id,
         
         schema_version: telemetry.schema_version ?? null,
@@ -89,11 +91,30 @@ export async function createTelemetry(
         smart_198: telemetry.smart_198 ?? null,
     });
 
-    request.log.info(
-        `[TELEMETRY V2] Gravado equipamento ${equipment.id} | Host: ${telemetry.hostname} | Status: ${finalStatus} | Protocol: ${telemetry.protocol || 'N/A'}`
+    // Sincroniza o health_status persistido na tabela equipments (mesmo em collection_status === 'failed')
+    const recentTelemetries = await db
+        .select()
+        .from(telemetryHistory)
+        .where(eq(telemetryHistory.equipment_id, equipment.id))
+        .orderBy(desc(telemetryHistory.created_at))
+        .limit(2);
+
+    const { status: computedStatus } = classifyHealth(
+        recentTelemetries[0],
+        recentTelemetries[1],
+        nowDate.getTime()
     );
 
-    return reply.status(200).send({
+    await db
+        .update(equipments)
+        .set({ health_status: computedStatus })
+        .where(eq(equipments.id, equipment.id));
+
+    request.log.info(
+        `[TELEMETRY V2] Gravado equipamento ${equipment.id} | Host: ${telemetry.hostname} | Status: ${finalStatus} | Health: ${computedStatus} | Protocol: ${telemetry.protocol || 'N/A'}`
+    );
+
+    return reply.status(201).send({
         success: true,
         message:
             "Telemetria recebida com sucesso",
@@ -105,7 +126,7 @@ export async function getTelemetryStatus(
     reply: FastifyReply
 ) {
     const allEquipments = await db
-        .select({ id: equipments.id })
+        .select({ id: equipments.id, health_status: equipments.health_status })
         .from(equipments);
 
     const counts = {
@@ -126,7 +147,12 @@ export async function getTelemetryStatus(
             .orderBy(desc(telemetryHistory.created_at))
             .limit(2);
 
-        const { status } = classifyHealth(recentTelemetries[0], recentTelemetries[1], now);
+        const { status } = classifyHealth(
+            recentTelemetries[0],
+            recentTelemetries[1],
+            now,
+            equipment.health_status
+        );
 
         if (status === "OFFLINE") counts.offline++;
         else if (status === "SEM_LEITURA") counts.sem_leitura++;

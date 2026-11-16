@@ -68,7 +68,12 @@ export async function getEquipments(
                 .orderBy(desc(telemetryHistory.created_at))
                 .limit(2);
                 
-            const { status: liveStatus, reasons } = classifyHealth(recentTelemetries[0], recentTelemetries[1], now);
+            const { status: liveStatus, reasons } = classifyHealth(
+                recentTelemetries[0],
+                recentTelemetries[1],
+                now,
+                eqData.health_status
+            );
             
             return {
                 ...eqData,
@@ -100,7 +105,12 @@ export async function getEquipmentById(
         .orderBy(desc(telemetryHistory.created_at))
         .limit(2);
         
-    const { status: liveStatus, reasons } = classifyHealth(recentTelemetries[0], recentTelemetries[1]);
+    const { status: liveStatus, reasons } = classifyHealth(
+        recentTelemetries[0],
+        recentTelemetries[1],
+        Date.now(),
+        eqData.health_status
+    );
     
     return reply.status(200).send({
         ...eqData,
