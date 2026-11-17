@@ -191,11 +191,16 @@ func obterUsoDisco() (int, error) {
 // COMUNICAÇÃO — POST /telemetry
 // --------------------------------------------------
 
+const defaultAgentKey = "vanguard-edge-agent-key-2026-8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f"
+
 func apiKey() string {
 	if key := os.Getenv("VANGUARD_API_KEY"); key != "" {
 		return key
 	}
-	return os.Getenv("AGENT_API_KEY")
+	if key := os.Getenv("AGENT_API_KEY"); key != "" {
+		return key
+	}
+	return defaultAgentKey
 }
 
 func enviarTelemetria(telemetria Telemetry) error {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -182,6 +183,19 @@ func TestParseSmart(t *testing.T) {
 				}
 				t.Errorf("SmartPassed: expected %v, got %v", *tt.expected.SmartPassed, got)
 			}
+
+			lifeStr := "N/A"
+			if parsed.Metrics.LifeRemainingPct != nil {
+				lifeStr = fmt.Sprintf("%d%%", *parsed.Metrics.LifeRemainingPct)
+			}
+			t.Logf("[OK] %s (%s) | %dC | Vida: %s | Erros: %d | SMART: %v",
+				*parsed.Metrics.DeviceModel,
+				parsed.Metrics.MediaType,
+				*parsed.Metrics.TemperatureC,
+				lifeStr,
+				*parsed.Metrics.MediaErrors,
+				*parsed.Metrics.SmartPassed,
+			)
 		})
 	}
 }
@@ -203,4 +217,5 @@ func TestPrunePayload(t *testing.T) {
 	if _, exists := parsed.RawPayload["ata_smart_self_test_log"]; exists {
 		t.Errorf("Expected ata_smart_self_test_log to be removed")
 	}
+	t.Logf("[OK] Logs pesados removidos do JSON antes do envio HTTP")
 }
