@@ -3,10 +3,10 @@
 
 $ErrorActionPreference = "Stop"
 
-# 1. Checa privilégios de Administrador
+# 1. Auto-elevacao para Administrador (UAC) caso tenha sido aberto com clique normal
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Warning "Por favor, execute este script como Administrador!"
-    Pause
+    Write-Host "Solicitando permissao de Administrador (UAC)..." -ForegroundColor Yellow
+    Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     Exit
 }
 
@@ -43,6 +43,12 @@ Start-Sleep -Seconds 2
 Copy-Item -Path $SourceExe -Destination $TargetPath -Force
 Write-Host "[OK] Agente copiado para $TargetPath" -ForegroundColor Green
 
+# 4.1. Registra a chave de autenticacao M2M (x-api-key) no escopo de Maquina (SYSTEM)
+$AgentApiKey = "vanguard-edge-agent-key-2026-8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f"
+[Environment]::SetEnvironmentVariable("VANGUARD_API_KEY", $AgentApiKey, "Machine")
+$env:VANGUARD_API_KEY = $AgentApiKey
+Write-Host "[OK] Chave de acesso M2M (VANGUARD_API_KEY) configurada no sistema." -ForegroundColor Green
+
 # 5. Registra a Tarefa Agendada para iniciar com o Windows (como SYSTEM)
 # Remove a tarefa se já existir para forçar atualização
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
@@ -74,5 +80,8 @@ Start-ScheduledTask -TaskName $TaskName
 Write-Host "[OK] Agente Vanguard iniciado com sucesso." -ForegroundColor Green
 
 Write-Host ""
-Write-Host "Instalação concluída! O computador já está sendo monitorado." -ForegroundColor Yellow
+Write-Host "=====================================================" -ForegroundColor Cyan
+Write-Host "  HOSTNAME DESTA MAQUINA: $env:COMPUTERNAME" -ForegroundColor White
+Write-Host "=====================================================" -ForegroundColor Cyan
+Write-Host "Instalacao concluida! O computador ja esta sendo monitorado." -ForegroundColor Yellow
 Pause
